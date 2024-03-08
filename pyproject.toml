@@ -1,0 +1,85 @@
+[build-system]
+build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core"]
+
+[tool.commitizen]
+bump_message = "bump: $current_version → $new_version"
+changelog_incremental = true
+name = "cz_conventional_commits"
+tag_format = "v$version"
+update_changelog_on_bump = true
+version = "0.0.1"
+version_files = [
+  "VERSION",
+  "pyproject.toml:^version = ",
+  "poetry_plugin_pin_path_deps/_version.py:^__version"
+]
+
+[tool.docformatter]
+black = true
+pre-summary-newline = true
+recursive = true
+wrap-descriptions = 120
+wrap-summaries = 120
+
+[tool.mypy]
+check_untyped_defs = true
+disallow_any_generics = true
+disallow_untyped_defs = true
+explicit_package_bases = true
+implicit_reexport = false
+strict_equality = true
+warn_redundant_casts = true
+warn_return_any = true
+warn_unreachable = true
+warn_unused_configs = true
+warn_unused_ignores = true
+
+[tool.poetry]
+authors = ["Gerben Oostra <ynnx1wmd@duck.com>"]
+classifiers = [
+  "Topic :: Software Development :: Build Tools",
+  "Topic :: Software Development :: Libraries :: Python Modules"
+]
+description = "Poetry plugin to replace path dependencies with a pinned version in the build"
+homepage = "https://github.com/gerbenoostra/poetry-plugin-pin-path-deps"
+include = [
+  {path = "tests", format = "sdist"}
+]
+keywords = ["packaging", "poetry"]
+license = "MIT"
+name = "poetry-plugin-pin-path-deps"
+packages = [
+  {include = "poetry_plugin_pin_path_deps"}
+]
+readme = "README.md"
+repository = "https://github.com/gerbenoostra/poetry-plugin-pin-path-deps"
+version = "0.0.1"
+
+[tool.poetry.dependencies]
+poetry = "^1.7.0"
+poetry-core = "^1.7.0"
+python = "^3.8"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.2"
+pytest-cov = "^4.1.0"
+ruff = "^0.3.1"
+
+[tool.poetry.plugins."poetry.application.plugin"]
+pin-path-deps = "poetry_plugin_pin_path_deps.plugin:PinPathDepsPlugin"
+
+[tool.ruff]
+fix = true
+line-length = 120
+target-version = "py38"
+
+[tool.ruff.lint]
+preview = true
+select = [
+  "E",
+  "F",
+  "FA",
+  "UP",
+  "I"
+]
