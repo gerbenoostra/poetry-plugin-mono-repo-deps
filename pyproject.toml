@@ -92,6 +92,12 @@ pytest-mock = "^3.14.0"
 pytest-runner = "^6.0.1"
 ruff = "^0.3.1"
 
+[tool.poetry.group.github-actions]
+optional = true
+
+[tool.poetry.group.github-actions.dependencies]
+pytest-github-actions-annotate-failures = "^0.1.7"
+
 [tool.poetry.plugins."poetry.application.plugin"]
 mono-repo-deps = "poetry_plugin_mono_repo_deps.plugin:MonoRepoDepsPlugin"
 
