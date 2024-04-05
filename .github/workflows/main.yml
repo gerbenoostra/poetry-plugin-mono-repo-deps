@@ -62,7 +62,9 @@ jobs:
 
       - name: Install poetry
         shell: bash
-        run: pipx install poetry
+        run: |
+          pipx install poetry
+          pipx ensurepath
 
       - name: Set up cache
         uses: actions/cache@v4
