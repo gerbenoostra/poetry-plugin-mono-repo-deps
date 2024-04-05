@@ -48,13 +48,13 @@ class Config(BaseConfig):
         self.merge(self._config_source.config)
         self.merge(self._auth_config_source.config)
 
-        return super().raw()  # type: ignore[no-any-return]
+        return super().raw()
 
     def all(self) -> dict[str, Any]:
         self.merge(self._config_source.config)
         self.merge(self._auth_config_source.config)
 
-        return super().all()  # type: ignore[no-any-return]
+        return super().all()
 
 
 @pytest.fixture
