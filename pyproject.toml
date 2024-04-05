@@ -1,6 +1,6 @@
 [build-system]
 build-backend = "poetry.core.masonry.api"
-requires = ["poetry-core"]
+requires = ["poetry-core>=1.0.0"]
 
 [tool.commitizen]
 bump_message = "bump: $current_version → $new_version"
@@ -8,12 +8,27 @@ changelog_incremental = true
 name = "cz_conventional_commits"
 tag_format = "v$version"
 update_changelog_on_bump = true
-version = "0.0.1"
+version = "0.1.0"
 version_files = [
   "VERSION",
   "pyproject.toml:^version = ",
-  "poetry_plugin_pin_path_deps/_version.py:^__version"
+  "poetry_plugin_mono_repo_deps/_version.py:^__version"
 ]
+
+[tool.coverage.report]
+fail_under = 100
+show_missing = true
+
+[tool.coverage.run]
+branch = true
+omit = ["tests/**"]
+relative_files = true
+
+[tool.coverage.tml]
+directory = "coverage/cov_html"
+
+[tool.coverage.xml]
+output = "coverage/coverage.xml"
 
 [tool.docformatter]
 black = true
@@ -26,6 +41,7 @@ wrap-summaries = 120
 check_untyped_defs = true
 disallow_any_generics = true
 disallow_untyped_defs = true
+exclude = ["^tests/fixtures/simple_a"]
 explicit_package_bases = true
 implicit_reexport = false
 strict_equality = true
@@ -35,26 +51,30 @@ warn_unreachable = true
 warn_unused_configs = true
 warn_unused_ignores = true
 
+[[tool.mypy.overrides]]
+ignore_missing_imports = true
+module = ["cleo.*", "poetry.*", "pytest.*", "pytest_mock.*", "keyring.*", "tomlkit.*"]
+
 [tool.poetry]
 authors = ["Gerben Oostra <ynnx1wmd@duck.com>"]
 classifiers = [
   "Topic :: Software Development :: Build Tools",
   "Topic :: Software Development :: Libraries :: Python Modules"
 ]
-description = "Poetry plugin to replace path dependencies with a pinned version in the build"
-homepage = "https://github.com/gerbenoostra/poetry-plugin-pin-path-deps"
+description = "Poetry plugin to replace path dependencies in mono repos with named dependency specifications at build time"
+homepage = "https://github.com/gerbenoostra/poetry-plugin-mono-repo-deps"
 include = [
   {path = "tests", format = "sdist"}
 ]
 keywords = ["packaging", "poetry"]
 license = "MIT"
-name = "poetry-plugin-pin-path-deps"
+name = "poetry-plugin-mono-repo-deps"
 packages = [
-  {include = "poetry_plugin_pin_path_deps"}
+  {include = "poetry_plugin_mono_repo_deps"}
 ]
 readme = "README.md"
-repository = "https://github.com/gerbenoostra/poetry-plugin-pin-path-deps"
-version = "0.0.1"
+repository = "https://github.com/gerbenoostra/poetry-plugin-mono-repo-deps"
+version = "0.1.0"
 
 [tool.poetry.dependencies]
 poetry = "^1.7.0"
@@ -62,17 +82,26 @@ poetry-core = "^1.7.0"
 python = "^3.8"
 
 [tool.poetry.group.dev.dependencies]
+poetry = "^1.8.2"
+poetry-plugin-export = "^1.7.1"
 pytest = "^8.0.2"
 pytest-cov = "^4.1.0"
+pytest-mock = "^3.14.0"
+pytest-runner = "^6.0.1"
 ruff = "^0.3.1"
 
 [tool.poetry.plugins."poetry.application.plugin"]
-pin-path-deps = "poetry_plugin_pin_path_deps.plugin:PinPathDepsPlugin"
+mono-repo-deps = "poetry_plugin_mono_repo_deps.plugin:MonoRepoDepsPlugin"
 
 [tool.ruff]
+extend-exclude = [
+  # External to the project's coding standards
+  "tests/**/fixtures/simple_a/*"
+]
 fix = true
 line-length = 120
 target-version = "py38"
+unsafe-fixes = true
 
 [tool.ruff.lint]
 preview = true

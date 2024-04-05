@@ -1,0 +1,14 @@
+[build-system]
+build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core"]
+
+[tool.poetry]
+authors = ["John Doe <john@example.com>"]
+description = "Has tool enabled, but no dependencies"
+name = "lib-independent"
+version = "0.0.1"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+
+[tool.poetry-monorepo.deps]

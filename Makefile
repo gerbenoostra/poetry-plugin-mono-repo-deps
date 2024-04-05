@@ -13,6 +13,7 @@ ${VENV_DIR}/.touchfile: poetry.lock
 
 poetry.lock: pyproject.toml
 	poetry lock --no-update
+	touch poetry.lock
 
 clean:
 	rm -rf ${VENV_DIR}
@@ -27,8 +28,8 @@ pre-commit: .git/hooks/pre-commit .git/hooks/commit-msg
 	pre-commit install --hook-type commit-msg
 
 lint: venv
-	poetry run ruff check poetry_plugin_pin_path_deps tests
-	poetry run mypy --config-file pyproject.toml poetry_plugin_pin_path_deps tests
+	poetry run ruff check poetry_plugin_mono_repo_deps tests
+	poetry run mypy --config-file pyproject.toml poetry_plugin_mono_repo_deps tests
 
 test: venv
-	poetry run pytest --cov poetry_plugin_path_deps --cov-config .coveragerc --cov-report xml:coverage.xml --cov-report term-missing  --junitxml=report.xml -vv -p no:toolbox tests
+	poetry run python -m pytest --cov poetry_plugin_mono_repo_deps --cov-config pyproject.toml --cov-report xml:coverage/coverage.xml --cov-report term-missing  --junitxml=coverage/report.xml -vv -p no:toolbox tests

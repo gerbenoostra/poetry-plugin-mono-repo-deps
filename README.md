@@ -1,22 +1,32 @@
 # Poetry plugin to Pin Path dependencies
 
-A [**Poetry**](https://python-poetry.org/) plugin for Poetry mono repositories.
-Poetry mono-repositories rely on path dependencies for dependencies within the mono repo.
-During building, this plugin will replace these dependencies in the final artifact (zip/wheel) with named dependencies.
-It uses the semantical compatible version range.
+[![Poetry](https://img.shields.io/endpoint?url=https://python-poetry.org/badge/v0.json)](https://python-poetry.org/)
 
-For example, if you have 2 libraries in a mono-repo.
+A [**Poetry**](https://python-poetry.org/) plugin for Poetry mono repositories, that will replace the inner-repository path dependencies with named dependency specifications.
 
-One common utility library:
+A mono repository contains multiple Python packages, which can depend on each other.
+These are typically path dependencies with the `develop = true` attribute.
+However, when the packages are published to a PyPi repo, these dependencies should be named dependencies.
+This allows the publication of each mono repository package independently, while keeping dependencies correct, such that any package contained in the mono repository can be easily installed or depended upon.
+
+This plugin will replace these path dependencies (`name @ path`) with named dependency specifications (`name ~= version`).
+By default, this is done when building artifacts ([`poetry build`](https://python-poetry.org/docs/main/cli/#build)) and exporting the locked dependency list ([`poetry export`](https://github.com/python-poetry/poetry-plugin-export)).
+The plugin can however be configured to modify any other command registered by Poetry or other plugins.
+
+## Example
+
+Suppose you have a single folder with 2 Python packages, where one (`app-b`) depends on the other (`lib-a`).
+
+The used library has the following in its Poetry section:
 
 ```{toml}
 # repo/A/pyproject.toml
 [tool.poetry]
-name = "library-A"
-version = "3.2.1"
+name = "lib-a"
+version = "0.0.1"
 ```
 
-And another library or application that depends on the common utility:
+The application package depends on the previous library as follows:
 
 ```{toml}
 # repo/B/pyproject.toml
@@ -27,40 +37,150 @@ name = "app-B"
 library-a = {path = "../A", develop=true}
 ```
 
-When building App-B to a wheel/zip, it will define the dependency of B->A as follows:
+### Poetry build
+
+When building the above project with Poetry (`poetry build`), the resulting build artifact (`tar.gz`/`whl`) will contain a path dependency in its metadata that looks like:
 
 ```
-library-a~=3.2.1
+Requires-Dist: lib-a @ file:///your/local/checkout/project/root/lib-a
+```
+
+This prevents sharing the build and reusing the build artifact on other systems, as it expects to find `lib-a` at that specific path.
+
+However, by using this Mono-Repo-Deps plugin, the Poetry build will result in the following dependency:
+
+```
+Requires-Dist: lib-a (>=0.0.1,<0.1.0)
+```
+
+### Poetry export
+
+When exporting the full dependency list (`poetry export`), the resulting dependency list (`requirements.txt`) will also contain path depdendencies with full paths:
+
+```
+lib-a @ file:///your/local/checkout/project/root/lib-a
+```
+
+Again, by using this Mono-Repo-Deps plugin, these will become:
+
+```
+lib-a==0.1.0
 ```
 
 ## Installation
 
-Add the plugin to poetry:
+You can install the plugin as explained in the [Poetry documentation about plugin usage](https://python-poetry.org/docs/main/plugins/#using-plugins).
+
+Which can be summarized as:
+
+If you used PipX to install Poetry:
+
+```
+pipx inject poetry poetry-plugin-mono-repo-deps
+```
+
+If you used Pip to install Poetry:
+
+```
+pip install poetry-plugin-mono-repo-deps
+```
+
+On non-Windows devices, you can also use Poetry's `self add` which will also validate compatibility:
 
 ```shell
-poetry self add poetry-plugin-pin-path-deps
+poetry self add poetry-plugin-mono-repo-deps
 ```
 
-If you used pipx to install Poetry, you can use:
+## Usage:
 
+As plugins are installed systemwide, **this plugin is by default disabled** to not unintentionally modify existing behavior of Poetry.
+
+Enable the plugin by adding the following (empty) section to your `pyproject.toml`:
+
+```{toml}
+# repo/B/pyproject.toml
+[tool.poetry-monorepo.deps]
 ```
-pipx inject poetry poetry-plugin-pin-path-deps
+
+This is equivalent to adding following default settings:
+
+```{toml}
+[tool.poetry-monorepo.deps]
+enabled = true
+commands = ["build", "export"]
+constraint = "~="
+source_types = ["file", "directory"]
+only_develop = False
 ```
 
-If you used pip to install Poetry, you can use:
+Possible alternative values can be found in the following section:
 
-```
-pip install poetry-plugin-pin-path-deps
-```
+## Configuration:
 
-## Development of the plugin
+### `enabled`
 
-We recommend to use pyenv to select the right python version:
+Type: `boolean`
+Default: `true`
+Allowed values: `true`, `false`
+
+Whether the plugin should be activated for commands on this project.
+
+### `commands`
+
+Type: `List[string]`
+Default: `["build", "export"]`
+Allowed values: Any CLI command registered with Poetry (could also be provided by other plugins)
+
+The intercepted poetry commands.
+The plugin will intercept the command and update the internal representation of dependencies, changing the path dependencies to named dependency specifications.
+
+### `constraint`
+
+Type: `string`
+Default: `~=`
+Allowed values: `==`, `>=` , `~=` , `^` (All [Poetry version constrraints](https://python-poetry.org/docs/dependency-specification/))
+
+The version constraint that is applied to the current version of the dependency.
+
+For example, when the dependency has version `0.0.1`, and the default constraint string `~=` is used, it will result in a named dependency with version `>=0.1.0, <0.1.0`.
+
+### `source_types`
+
+Type: `List[string]`
+Default: `["file", "directory"]` (local Path dependencies)
+Allowed values: `["file", "directory", "url", "git"]`. (Any `source_type` attribute of Poetry's internal Dependency object, which includes the lowercase VCS identifier, like `git`).
+
+The type of dependencies that should be replaced with their named version specification.
+
+### `only_develop`
+
+Type: `boolean`
+Default: `false`
+
+Enable to only replace `develop` dependencies, which, as currently implemented in Poetry, are only `directory` [Path dependencies](https://python-poetry.org/docs/main/dependency-specification/#path-dependencies).
+
+This filter is **only applied to directory path** dependencies, as only those can have the `develop` mark.
+
+If you configure `source_types` to be any Path dependency (ie. `file` or `directory`), all file path dependencies will be translated, while only the directory dependencies annotated with `develop = true` will be translated.
+
+## Caveats
+
+Currently, the plugin has only been verified to work with the `poetry build` and `poetry export` commands.
+
+## Contributing
+
+We recommend using PyEnv to select the right Python version:
 
 ```
 pyenv local && poetry env use $(which python)
 make venv
 ```
 
-We use pre-commit, which works on python>=3.9, while this project aims to work on python>=3.8.
-Therefore install it on your system yourself (using brew / pipx)
+We use [pre-commit](https://pre-commit.com/), which most recent version requires Python >=3.9, while this project aims to work on Python >=3.8.
+Therefore install pre-commit on your system yourself (using Homebrew / PipX)
+
+Tests can be run with `make test`, linting with `make lint`
+
+## License
+
+This project is licensed under the terms of the MIT open-source license. Please refer to [MIT](https://github.com/gerbenoostra/poetry-plugin-mono-repo-deps/blob/HEAD/LICENSE) for the full terms.

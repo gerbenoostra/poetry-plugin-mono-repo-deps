@@ -1,0 +1,18 @@
+[build-system]
+build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core"]
+
+[tool.poetry]
+authors = ["John Doe <john@example.com>"]
+description = "Has empty poetry-monorepo deps section, which should enable it."
+name = "lib-enabled"
+version = "0.0.1"
+
+[tool.poetry.dependencies]
+lib-a = {path = "../lib-a", develop = true}
+python = "^3.8"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.2"
+
+[tool.poetry-monorepo.deps]
