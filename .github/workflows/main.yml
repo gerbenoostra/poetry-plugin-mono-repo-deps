@@ -25,7 +25,7 @@ jobs:
 
 
   Tests:
-    name: ${{ matrix.os }} / ${{ matrix.python-version }} ${{ matrix.suffix }}
+    name: ${{ matrix.os }} / ${{ matrix.python-version }}
     runs-on: ${{ matrix.image }}
     strategy:
       matrix:
