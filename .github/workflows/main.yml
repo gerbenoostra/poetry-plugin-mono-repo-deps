@@ -97,3 +97,4 @@ jobs:
           flags: unittests
           directory: .coverage
           files: ./coverage.xml
+          slug: gerbenoostra/poetry-plugin-mono-repo-deps
