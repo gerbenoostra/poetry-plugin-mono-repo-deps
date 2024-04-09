@@ -92,7 +92,7 @@ jobs:
         uses: codecov/codecov-action@v4.3.0
         with:
           env_vars: OS,PYTHON
-          use_oidc: true
+          token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true
           flags: unittests
           directory: .coverage
