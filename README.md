@@ -2,18 +2,19 @@
 
 [![Poetry](https://img.shields.io/endpoint?url=https://python-poetry.org/badge/v0.json)](https://python-poetry.org/)
 
-A [**Poetry**](https://python-poetry.org/) plugin for Poetry mono repositories, that will replace the inner-repository path dependencies with named dependency specifications.
+A [**Poetry**](https://python-poetry.org/) plugin for Poetry mono repositories, that will replace path dependencies with named dependency specifications.
 
 A mono repository contains multiple Python packages, which can depend on each other.
 These are typically path dependencies with the `develop = true` attribute.
+This allows for easy development and local running.
 However, when the packages are published to a PyPi repo, these dependencies should be named dependencies.
-This allows the publication of each mono repository package independently, while keeping dependencies correct, such that any package contained in the mono repository can be easily installed or depended upon.
+By publishing the packages with named dependencies, one can easily install the packages and their dependencies.
 
-This plugin will replace these path dependencies (`name @ path`) with named dependency specifications (`name ~= version`).
+This plugin will replace path dependencies (`name @ path`) with named dependency specifications (`name ~= version`).
 By default, this is done when building artifacts ([`poetry build`](https://python-poetry.org/docs/main/cli/#build)) and exporting the locked dependency list ([`poetry export`](https://github.com/python-poetry/poetry-plugin-export)).
 The plugin can however be configured to modify any other command registered by Poetry or other plugins.
 
-## Example
+## An example using build and export
 
 Suppose you have a single folder with 2 Python packages, where one (`app-b`) depends on the other (`lib-a`).
 
@@ -39,7 +40,7 @@ library-a = {path = "../A", develop=true}
 
 ### Poetry build
 
-When building the above project with Poetry (`poetry build`), the resulting build artifact (`tar.gz`/`whl`) will contain a path dependency in its metadata that looks like:
+By default, building the above project with Poetry (`poetry build`), will result in a build artifact (`tar.gz`/`whl`) containing a path dependency in its metadata similar to:
 
 ```
 Requires-Dist: lib-a @ file:///your/local/checkout/project/root/lib-a
@@ -47,7 +48,7 @@ Requires-Dist: lib-a @ file:///your/local/checkout/project/root/lib-a
 
 This prevents sharing the build and reusing the build artifact on other systems, as it expects to find `lib-a` at that specific path.
 
-However, by using this Mono-Repo-Deps plugin, the Poetry build will result in the following dependency:
+Using this Mono-Repo-Deps plugin, the Poetry build will result in the following dependency:
 
 ```
 Requires-Dist: lib-a (>=0.0.1,<0.1.0)
@@ -55,7 +56,7 @@ Requires-Dist: lib-a (>=0.0.1,<0.1.0)
 
 ### Poetry export
 
-When exporting the full dependency list (`poetry export`), the resulting dependency list (`requirements.txt`) will also contain path depdendencies with full paths:
+By default, exporting the full dependency list (`poetry export`) results in a dependency list (`requirements.txt`) that also contain path dedendencies with full paths:
 
 ```
 lib-a @ file:///your/local/checkout/project/root/lib-a
@@ -93,7 +94,7 @@ poetry self add poetry-plugin-mono-repo-deps
 
 ## Usage:
 
-As plugins are installed systemwide, **this plugin is by default disabled** to not unintentionally modify existing behavior of Poetry.
+As plugins are installed systemwide, **this plugin is by default disabled** to not unintentionally modify the existing behavior of Poetry.
 
 Enable the plugin by adding the following (empty) section to your `pyproject.toml`:
 
@@ -102,7 +103,7 @@ Enable the plugin by adding the following (empty) section to your `pyproject.tom
 [tool.poetry-monorepo.deps]
 ```
 
-This is equivalent to adding following default settings:
+This is equivalent to adding the following default settings:
 
 ```{toml}
 [tool.poetry-monorepo.deps]
@@ -119,26 +120,32 @@ Possible alternative values can be found in the following section:
 
 ### `enabled`
 
-Type: `boolean`
-Default: `true`
-Allowed values: `true`, `false`
+**Type**: `boolean`
+
+**Default**: `true`
+
+**Allowed values**: `true`, `false`
 
 Whether the plugin should be activated for commands on this project.
 
 ### `commands`
 
-Type: `List[string]`
-Default: `["build", "export"]`
-Allowed values: Any CLI command registered with Poetry (could also be provided by other plugins)
+**Type**: `List[string]`
+
+**Default**: `["build", "export"]`
+
+**Allowed values**: Any CLI command registered with Poetry (could also be provided by other plugins).
 
 The intercepted poetry commands.
 The plugin will intercept the command and update the internal representation of dependencies, changing the path dependencies to named dependency specifications.
 
 ### `constraint`
 
-Type: `string`
-Default: `~=`
-Allowed values: `==`, `>=` , `~=` , `^` (All [Poetry version constrraints](https://python-poetry.org/docs/dependency-specification/))
+**Type**: `string`
+
+**Default**: `~=`
+
+**Allowed values**: `==`, `>=` , `~=` , `^` (All [valid Poetry version constraints](https://python-poetry.org/docs/dependency-specification/)).
 
 The version constraint that is applied to the current version of the dependency.
 
@@ -146,16 +153,19 @@ For example, when the dependency has version `0.0.1`, and the default constraint
 
 ### `source_types`
 
-Type: `List[string]`
-Default: `["file", "directory"]` (local Path dependencies)
-Allowed values: `["file", "directory", "url", "git"]`. (Any `source_type` attribute of Poetry's internal Dependency object, which includes the lowercase VCS identifier, like `git`).
+**Type**: `List[string]`
+
+**Default**: `["file", "directory"]` (local Path dependencies)
+
+**Allowed values**: `["file", "directory", "url", "git"]`. (Any `source_type` attribute of Poetry's internal Dependency object, which includes the lowercase VCS identifier, like `git`).
 
 The type of dependencies that should be replaced with their named version specification.
 
 ### `only_develop`
 
-Type: `boolean`
-Default: `false`
+**Type**: `boolean`
+
+**Default**: `false`
 
 Enable to only replace `develop` dependencies, which, as currently implemented in Poetry, are only `directory` [Path dependencies](https://python-poetry.org/docs/main/dependency-specification/#path-dependencies).
 
@@ -166,6 +176,15 @@ If you configure `source_types` to be any Path dependency (ie. `file` or `direct
 ## Caveats
 
 Currently, the plugin has only been verified to work with the `poetry build` and `poetry export` commands.
+Though theoretically it should work with any other (plugin's) command, your mileage may vary.
+
+## How it works
+
+If enabled, this plugin registers itself to run before specific commands.
+When these commands are run, it will modify the internal lock file representation that Poetry uses, replacing the path dependency objects with regular dependencies.
+
+The idea came from the [Python Poetry Monorepo without Limitations](https://gerben-oostra.medium.com/python-poetry-mono-repo-without-limitations-dd63b47dc6b8) blog post on Medium, which describes how a simple script can modify the `pyproject.toml` before a build step, resulting in named dependencies in the build artifacts.
+This plugin only temporarily modifies the structure, in memory, just for the command you run it on.
 
 ## Contributing
 
