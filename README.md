@@ -1,6 +1,7 @@
 # Poetry plugin to Pin Path dependencies
 
 [![Poetry](https://img.shields.io/endpoint?url=https://python-poetry.org/badge/v0.json)](https://python-poetry.org/)
+[![codecov](https://codecov.io/gh/gerbenoostra/poetry-plugin-mono-repo-deps/graph/badge.svg?token=O6NQ6H0IVN)](https://codecov.io/gh/gerbenoostra/poetry-plugin-mono-repo-deps)
 
 A [**Poetry**](https://python-poetry.org/) plugin for Poetry mono repositories, that will replace path dependencies with named dependency specifications.
 

@@ -43,6 +43,9 @@ jobs:
       run:
         shell: bash
     needs: Lint
+    env:
+      OS: ${{ matrix.os }}
+      PYTHON: ${{ matrix.python-version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -81,3 +84,13 @@ jobs:
 
       - name: Coverage for pytest
         run: make test
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          env_vars: OS,PYTHON
+          use_oidc: true
+          fail_ci_if_error: true
+          flags: unittests
+          directory: .coverage
+          files: ./coverage.xml
