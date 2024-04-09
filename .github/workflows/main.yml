@@ -95,6 +95,5 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true
           flags: unittests
-          directory: .coverage
-          files: ./coverage.xml
+          files: ./coverage/coverage.xml
           slug: gerbenoostra/poetry-plugin-mono-repo-deps
