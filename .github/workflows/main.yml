@@ -46,6 +46,8 @@ jobs:
     env:
       OS: ${{ matrix.os }}
       PYTHON: ${{ matrix.python-version }}
+    permissions:
+      id-token: write # This is required for requesting the JWT
     steps:
       - name: Checkout
         uses: actions/checkout@v4
