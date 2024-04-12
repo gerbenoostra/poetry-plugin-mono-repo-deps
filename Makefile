@@ -33,3 +33,6 @@ lint: venv
 
 test: venv
 	NO_COLOR=1 poetry run python -m pytest --cov poetry_plugin_mono_repo_deps --cov-config pyproject.toml --cov-report xml:coverage/coverage.xml --cov-report term-missing  --junitxml=coverage/report.xml -vv -p no:toolbox tests
+
+bump: venv
+	poetry run cz bump --retry
