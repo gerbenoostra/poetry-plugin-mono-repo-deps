@@ -112,7 +112,7 @@ enabled = true
 commands = ["build", "export"]
 constraint = "~="
 source_types = ["file", "directory"]
-only_develop = False
+only_develop = false
 ```
 
 Possible alternative values can be found in the following section:
