@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 import zipfile
 from pathlib import Path
@@ -9,18 +10,19 @@ from zipfile import ZipFile
 import pytest
 
 from tests.fixtures import TestSetup, module_setups, package_name_of
-from tests.helpers import AppRunner, prepare_test_app
+from tests.helpers import run_test_app
+
+_logger = logging.getLogger(__name__)
 
 
 @pytest.mark.parametrize("module_dir", module_setups.keys())
 def test_export_locked(fixture_simple_a: Path, tmp_path: Path, module_dir: str) -> None:
     setup = module_setups[module_dir]
-    test_app = prepare_test_app(fixture_simple_a / module_dir)
-    runner = AppRunner(test_app)
+    os.chdir(fixture_simple_a / module_dir)
 
     # export should contain the dependency as a name
     requirements_path = tmp_path / "reqs.txt"
-    _out, err = runner.run(["poetry", "export", "-vvv", "--output", str(requirements_path)])
+    _out, err = run_test_app(["poetry", "export", "-vvv", "--output", str(requirements_path)])
     assert err == ""
     requirements_content = requirements_path.read_text()
     fixed_str = f"""{setup.dep_name()}==0.0.1 ; python_version >= "3.8" and python_version < "4.0\""""
@@ -41,11 +43,10 @@ def test_export_locked(fixture_simple_a: Path, tmp_path: Path, module_dir: str) 
 def test_ignored_command(fixture_simple_a: Path, tmp_path: Path, module_dir: str) -> None:
     """Running on a completely different command."""
     module_setups[module_dir]
-    test_app = prepare_test_app(fixture_simple_a / module_dir)
-    runner = AppRunner(test_app)
+    os.chdir(fixture_simple_a / module_dir)
 
     # should have no effect on lock file
-    _out, err = runner.run(["poetry", "lock"])
+    _out, err = run_test_app(["poetry", "lock"])
     assert err == ""
     text = (tmp_path / "simple_a" / module_dir / "poetry.lock").read_text()
     if module_setups[module_dir].has_dep:
@@ -73,11 +74,10 @@ url = "../lib-a"
 def test_build_artifact(fixture_simple_a: Path, tmp_path: Path, module_dir: str) -> None:
     setup = module_setups[module_dir]
     package_name = package_name_of(module_dir)
-    test_app = prepare_test_app(fixture_simple_a / module_dir)
-    runner = AppRunner(test_app)
+    os.chdir(fixture_simple_a / module_dir)
 
     dist_path = tmp_path / "dist"
-    _out, err = runner.run(["poetry", "build", "-vvv", "--output", str(dist_path)])
+    _out, err = run_test_app(["poetry", "build", "-vvv", "--output", str(dist_path)])
     assert err == ""
 
     with ZipFile(dist_path / f"{package_name}-0.0.1-py3-none-any.whl") as whl:
@@ -107,3 +107,38 @@ def validate_package_metadata(setup: TestSetup, content: list[str]) -> None:
     else:
         assert fixed_str not in content
         assert not any([line.startswith(path_str) for line in content])
+
+
+def test_outside_project_version(tmp_path: Path) -> None:
+    os.chdir(tmp_path)  # run from folder without pyproject.toml
+
+    args = ["poetry", "--version"]
+    out_value, err_value = run_test_app(args)
+    assert err_value == ""
+    assert out_value.startswith("Poetry (version ")
+
+
+def test_outside_project_show_plugins(tmp_path: Path) -> None:
+    os.chdir(tmp_path)  # run from folder without pyproject.toml
+    args = ["poetry", "self", "show", "plugins"]
+    out_value, err_value = run_test_app(args)
+    assert err_value == ""
+    assert "poetry-plugin-mono-repo-deps" in out_value
+    assert (
+        "Poetry plugin to replace path dependencies in mono repos with named dependency specifications at build time"
+        in out_value
+    )
+
+
+def test_outside_project_cache(tmp_path: Path) -> None:
+    os.chdir(tmp_path)  # run from folder without pyproject.toml
+    args = ["poetry", "cache", "list"]
+    _out_value, err_value = run_test_app(args)
+    assert err_value == "No caches found"
+
+
+def test_outside_project_search(tmp_path: Path) -> None:
+    os.chdir(tmp_path)  # run from folder without pyproject.toml
+    args = ["poetry", "search", "requests"]
+    _out_value, err_value = run_test_app(args)
+    assert err_value == ""
