@@ -1,5 +1,5 @@
 default: help
-.PHONY: help clean pre-commit lint test
+.PHONY: help clean pre-commit lint test bump
 VENV_DIR = .venv
 
 help:
