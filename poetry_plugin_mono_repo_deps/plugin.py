@@ -9,7 +9,6 @@ from cleo.events.console_events import COMMAND
 from cleo.events.event import Event
 from cleo.events.event_dispatcher import EventDispatcher
 from cleo.io.io import IO
-from cleo.io.null_io import NullIO
 from poetry.console.application import Application
 from poetry.core.packages.dependency import Dependency
 from poetry.core.packages.package import Package
@@ -84,22 +83,9 @@ def load_config(poetry: Poetry) -> Config | None:
 class MonoRepoDepsPlugin(ApplicationPlugin):
     def __init__(self) -> None:
         super().__init__()
-        self._config: Config | None = None
 
     def activate(self, application: Application) -> None:
         self._application = application
-        self._poetry = self._application.poetry
-        self._config = load_config(self._poetry)
-        self._is_disabled = self._config is None
-
-        io = self._application._io or NullIO()
-        if self._is_disabled:
-            if io.is_debug():  # pragma: no cover
-                io.write_line(
-                    "<debug>Not replacing path dependencies by named dependencies as no tool configuration section "
-                    "found.</debug>"
-                )
-            return
         dispatcher = application.event_dispatcher
         if dispatcher is not None:
             dispatcher.add_listener(COMMAND, self.handle_command)
@@ -107,12 +93,29 @@ class MonoRepoDepsPlugin(ApplicationPlugin):
             pass
 
     def handle_command(self, event: Event, _event_name: str, _dispatcher: EventDispatcher) -> None:
-        if self._config is None:  # pragma: no cover
+        try:
+            poetry = self._application.poetry
+        except RuntimeError:
+            # should only happen if poetry runs outside poetry folder structure
+            # as we modify poetry lock files, the plugin can only work in poetry folders
+            # and is only relevant for commands that work in poetry folders
+            # thus, either the command is not relevant
+            # or, the command would fail itself
             return
+
+        config = load_config(poetry)
+
         event = cast(ConsoleEvent, event)  # because we listen to COMMANDs
         io = event.io
+        if config is None:  # pragma: no cover
+            if io.is_debug():  # pragma: no cover
+                io.write_line(
+                    "<debug>Not replacing path dependencies by named dependencies as no tool configuration section "
+                    "found.</debug>"
+                )
+            return
         command = event.command
-        if command.name not in self._config.commands:
+        if command.name not in config.commands:
             if io.is_debug():  # pragma: no cover
                 io.write_line(
                     "<debug>Not replacing path dependencies with named dependencies for command "
@@ -124,22 +127,20 @@ class MonoRepoDepsPlugin(ApplicationPlugin):
             io.write_line("<debug>Replacing path dependencies with named dependencies.</debug>")
 
         # for build
-        self.update_locked_repository(io)
+        self.update_locked_repository(io, config)
         # for export
-        self.update_lock_data()
+        self.update_lock_data(config)
         return None
 
-    def update_locked_repository(self, io: IO) -> None:
+    def update_locked_repository(self, io: IO, config: Config) -> None:
         """Updates the lockers locked repository, necessary for commands like `build`"""
-        if self._config is None:  # pragma: no cover
-            return
-        constraint = self._config.constraint
+        constraint = config.constraint
         poetry = self._application.poetry
         locked_repository = poetry._locker.locked_repository()
         for name in poetry.package.dependency_group_names():
             group = poetry.package.dependency_group(name)
             for dep in group.dependencies:
-                if is_to_be_replaced_dependency(self._config, dep):
+                if is_to_be_replaced_dependency(config, dep):
                     name = dep.name
                     # get the locked package to retrieve the current version
                     package = find_package(locked_repository, name)
@@ -155,14 +156,12 @@ class MonoRepoDepsPlugin(ApplicationPlugin):
                     else:  # pragma: no cover
                         io.write_error_line(f"Failed to find version for path dependency {name}")
 
-    def update_lock_data(self) -> None:
+    def update_lock_data(self, config: Config) -> None:
         """Updates the lockers internal lock data, necessary for commands like `export`"""
-        if self._config is None:  # pragma: no cover
-            return
         poetry = self._application.poetry
         locked_packages = cast(List[Dict[str, Any]], poetry._locker.lock_data["package"])
         for info in locked_packages:
-            if is_to_be_replaced_package(self._config, info):
+            if is_to_be_replaced_package(config, info):
                 modify_locked_package_to_named(info)
 
 

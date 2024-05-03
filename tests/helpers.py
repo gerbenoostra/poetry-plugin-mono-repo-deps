@@ -8,6 +8,7 @@ from typing import Any
 
 from cleo.commands.command import Command
 from cleo.io.inputs.argv_input import ArgvInput
+from cleo.io.io import IO
 from cleo.io.outputs.output import Verbosity
 from cleo.io.outputs.stream_output import StreamOutput
 from cleo.testers.command_tester import CommandTester
@@ -178,8 +179,38 @@ def prepare_test_poetry(proj_path: Path) -> Poetry:
 export_warning = "Warning: poetry-plugin-export will not be installed by default in a future version of Poetry.\nIn order to avoid a breaking change and make your automation forward-compatible, please install poetry-plugin-export explicitly. See https://python-poetry.org/docs/plugins/#using-plugins for details on how to install a plugin.\nTo disable this warning run 'poetry config warnings.export false'.\n"  # noqa: E501 Line too long
 
 
+def run_test_app(args: list[str]) -> tuple[str, str]:
+    test_app = Application()
+
+    out = StringIO()
+    err = StringIO()
+    out_stream = StreamOutput(out)
+    out_stream.set_verbosity(Verbosity.DEBUG)
+    err_stream = StreamOutput(err)
+    instr = ArgvInput(args)
+    io = IO(instr, out_stream, err_stream)
+    test_app._load_plugins(io)
+    test_app.auto_exits(False)
+    test_app.run(
+        instr,
+        out_stream,
+        err_stream,
+    )
+    out_stream.flush()
+    err_stream.flush()
+    out_value = out.getvalue()
+    _logger.info(out_value)
+    err_value = err.getvalue()
+    _logger.error(err_value)
+    err_value = err_value.replace(export_warning, "")
+    err_value = os.linesep.join(
+        [line for line in err_value.splitlines() if not line.startswith("Creating virtualenv ")]
+    )
+    return out_value, err_value
+
+
 class AppRunner:
-    def __init__(self, app: PoetryTestApplication) -> None:
+    def __init__(self, app: Application) -> None:
         self._test_app = app
 
     def run(self, args: list[str]) -> tuple[str, str]:
@@ -187,8 +218,10 @@ class AppRunner:
         err = StringIO()
         out_stream = StreamOutput(out)
         err_stream = StreamOutput(err)
+        instr = ArgvInput(args)
+        instr.bind(self._test_app.definition)
         self._test_app.run(
-            ArgvInput(args),
+            instr,
             out_stream,
             err_stream,
         )
