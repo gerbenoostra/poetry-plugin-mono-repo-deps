@@ -21,7 +21,7 @@ Suppose you have a single folder with 2 Python packages, where one (`app-b`) dep
 
 The used library has the following in its Poetry section:
 
-```{toml}
+```toml
 # repo/A/pyproject.toml
 [tool.poetry]
 name = "lib-a"
@@ -30,7 +30,7 @@ version = "0.0.1"
 
 The application package depends on the previous library as follows:
 
-```{toml}
+```toml
 # repo/B/pyproject.toml
 [tool.poetry]
 name = "app-B"
@@ -77,13 +77,13 @@ Which can be summarized as:
 
 If you used PipX to install Poetry:
 
-```
+```shell
 pipx inject poetry poetry-plugin-mono-repo-deps
 ```
 
 If you used Pip to install Poetry:
 
-```
+```shell
 pip install poetry-plugin-mono-repo-deps
 ```
 
@@ -99,14 +99,14 @@ As plugins are installed systemwide, **this plugin is by default disabled** to n
 
 Enable the plugin by adding the following (empty) section to your `pyproject.toml`:
 
-```{toml}
+```toml
 # repo/B/pyproject.toml
 [tool.poetry-monorepo.deps]
 ```
 
 This is equivalent to adding the following default settings:
 
-```{toml}
+```toml
 [tool.poetry-monorepo.deps]
 enabled = true
 commands = ["build", "export"]
@@ -191,7 +191,7 @@ This plugin only temporarily modifies the structure, in memory, just for the com
 
 We recommend using PyEnv to select the right Python version:
 
-```
+```console
 pyenv local && poetry env use $(which python)
 make venv
 ```
