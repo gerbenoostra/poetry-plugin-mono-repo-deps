@@ -213,3 +213,15 @@ def modify_locked_package_to_named(info: dict[str, Any]) -> None:
         del info["develop"]
     if "source" in info:  # pragma: no cover
         del info["source"]
+
+    # remove path and develop from dependencies of dependencies
+    for _, dep in info.get("dependencies", {}).items():
+        if "path" not in dep:
+            continue
+
+        if "path" in dep:
+            del dep["path"]
+        if "develop" in dep:
+            del dep["develop"]
+
+        dep["version"] = dep.get("version", "*")
