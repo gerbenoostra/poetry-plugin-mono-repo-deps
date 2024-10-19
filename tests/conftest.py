@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import logging
 import shutil
+import sys
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -14,6 +16,18 @@ from poetry.config.dict_config_source import DictConfigSource
 from poetry.utils.env import MockEnv
 from pytest_mock import MockerFixture
 
+_logger = logging.getLogger(__name__)
+
+
+@pytest.fixture(autouse=True, scope="session")
+def set_logging() -> None:
+    logging.basicConfig(level=logging.INFO)
+    logging.getLogger("poetry").setLevel(logging.DEBUG)
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setLevel(logging.DEBUG)
+    handler.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
+    logging.getLogger().addHandler(handler)
+
 
 class FixtureDirGetter(Protocol):
     def __call__(self, name: str) -> Path: ...
@@ -23,6 +37,7 @@ class FixtureDirGetter(Protocol):
 def fixture_copy(fixture_base: Path, tmp_path: Path) -> FixtureDirGetter:
     def copy(name: str) -> Path:
         dest = tmp_path / name
+        _logger.info(f"Copying {name} to {dest}")
         shutil.copytree(fixture_base / name, dest)
         return dest
 

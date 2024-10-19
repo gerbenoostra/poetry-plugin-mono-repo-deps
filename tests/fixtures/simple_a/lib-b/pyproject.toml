@@ -1,0 +1,17 @@
+[build-system]
+build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core"]
+
+[tool.poetry]
+authors = ["John Doe <john@example.com>"]
+description = "Example library"
+name = "lib-b"
+version = "0.0.1"
+
+[tool.poetry.dependencies]
+attrs = {version = "^23.2.0", optional = true}
+lib-a = {path = "../lib-a", develop = true}
+python = "^3.8"
+
+[tool.poetry.extras]
+attrs = ["attrs"]

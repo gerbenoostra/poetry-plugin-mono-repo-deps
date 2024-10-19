@@ -1,0 +1,21 @@
+[build-system]
+build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core"]
+
+[tool.poetry]
+authors = ["John Doe <john@example.com>"]
+description = "Nested dependency"
+name = "lib-nested"
+version = "0.0.1"
+
+[tool.poetry.dependencies]
+attrs = {version = "^23.2.0", optional = true}
+lib-b = {path = "../lib-b", develop = true}
+python = "^3.8"
+
+[tool.poetry.extras]
+attrs = ["attrs"]
+
+[tool.poetry-monorepo.deps]
+
+# enables path dependency replacement

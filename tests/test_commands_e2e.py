@@ -25,18 +25,16 @@ def test_export_locked(fixture_simple_a: Path, tmp_path: Path, module_dir: str) 
     _out, err = run_test_app(["poetry", "export", "-vvv", "--output", str(requirements_path)])
     assert err == ""
     requirements_content = requirements_path.read_text()
-    fixed_str = f"""{setup.dep_name()}==0.0.1 ; python_version >= "3.8" and python_version < "4.0\""""
-    path_str = f"{setup.dep_name()} @ "
-    if setup.has_dep:
+    _logger.info(requirements_content)
+    for dep in setup.deps or []:
+        fixed_str = f"""{dep.to_pep_508()} ; python_version >= "3.8" and python_version < "4.0\""""
+        path_str = f"{dep.name} @ "
         if setup.enabled:
             assert fixed_str in requirements_content
             assert path_str not in requirements_content
         else:
             assert fixed_str not in requirements_content
             assert path_str in requirements_content
-    else:
-        assert fixed_str not in requirements_content
-        assert path_str not in requirements_content
 
 
 @pytest.mark.parametrize("module_dir", module_setups.keys())
@@ -49,11 +47,13 @@ def test_ignored_command(fixture_simple_a: Path, tmp_path: Path, module_dir: str
     _out, err = run_test_app(["poetry", "lock"])
     assert err == ""
     text = (tmp_path / "simple_a" / module_dir / "poetry.lock").read_text()
-    if module_setups[module_dir].has_dep:
+    _logger.info(text)
+    setup = module_setups[module_dir]
+    for dep in setup.deps or []:
         assert (
-            """[package]]
-name = "lib-a"
-version = "0.0.1"
+            f"""[package]]
+name = "{dep.name}"
+version = "{dep.version}"
 description = "Example library"
 optional = false
 python-versions = "^3.8"
@@ -63,9 +63,9 @@ develop = true
             in text
         )
         assert (
-            """[package.source]
+            f"""[package.source]
 type = "directory"
-url = "../lib-a"
+url = "../{dep.name}"
 """
         ) in text
 
@@ -95,18 +95,22 @@ def test_build_artifact(fixture_simple_a: Path, tmp_path: Path, module_dir: str)
 
 
 def validate_package_metadata(setup: TestSetup, content: list[str]) -> None:
-    fixed_str = f"Requires-Dist: {setup.dep_name()} (>=0.0.1,<0.1.0)"
-    path_str = "Requires-Dist: lib-a @ "
-    if setup.has_dep:
+    _logger.info("\n".join(content))
+    # path dependency should be removed if enabled
+    for dep in setup.deps or []:
+        path_str = f"Requires-Dist: {dep.name} @ "
         if setup.enabled:
-            assert fixed_str in content
             assert not any([line.startswith(path_str) for line in content])
         else:
-            assert fixed_str not in content
             assert any([line.startswith(path_str) for line in content])
-    else:
-        assert fixed_str not in content
-        assert not any([line.startswith(path_str) for line in content])
+
+    # named dependency should be inserted if enabled
+    for dep in setup.deps or []:
+        fixed_str = f"Requires-Dist: {dep.full_name} (>=0.0.1,<0.1.0)"
+        if setup.enabled:
+            assert fixed_str in content
+        else:
+            assert fixed_str not in content
 
 
 def test_outside_project_version(tmp_path: Path) -> None:
@@ -114,6 +118,7 @@ def test_outside_project_version(tmp_path: Path) -> None:
 
     args = ["poetry", "--version"]
     out_value, err_value = run_test_app(args)
+    _logger.info(out_value)
     assert err_value == ""
     assert out_value.startswith("Poetry (version ")
 
@@ -122,6 +127,7 @@ def test_outside_project_show_plugins(tmp_path: Path) -> None:
     os.chdir(tmp_path)  # run from folder without pyproject.toml
     args = ["poetry", "self", "show", "plugins"]
     out_value, err_value = run_test_app(args)
+    _logger.info(out_value)
     assert err_value == ""
     assert "poetry-plugin-mono-repo-deps" in out_value
     assert (
@@ -134,6 +140,7 @@ def test_outside_project_cache(tmp_path: Path) -> None:
     os.chdir(tmp_path)  # run from folder without pyproject.toml
     args = ["poetry", "cache", "list"]
     _out_value, err_value = run_test_app(args)
+    _logger.info(_out_value)
     assert err_value == "No caches found"
 
 
@@ -141,4 +148,5 @@ def test_outside_project_search(tmp_path: Path) -> None:
     os.chdir(tmp_path)  # run from folder without pyproject.toml
     args = ["poetry", "search", "requests"]
     _out_value, err_value = run_test_app(args)
+    _logger.info(_out_value)
     assert err_value == ""
