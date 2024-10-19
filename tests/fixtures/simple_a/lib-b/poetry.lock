@@ -20,6 +20,25 @@ tests-mypy = ["mypy (>=1.6)", "pytest-mypy-plugins"]
 tests-no-zope = ["attrs[tests-mypy]", "cloudpickle", "hypothesis", "pympler", "pytest (>=4.3.0)", "pytest-xdist[psutil]"]
 
 [[package]]
+name = "lib-a"
+version = "0.0.1"
+description = "Example library"
+optional = false
+python-versions = "^3.8"
+files = []
+develop = true
+
+[package.dependencies]
+urllib3 = {git = "https://github.com/urllib3/urllib3.git"}
+
+[package.extras]
+attrs = ["attrs (>=23.2.0,<24.0.0)"]
+
+[package.source]
+type = "directory"
+url = "../lib-a"
+
+[[package]]
 name = "urllib3"
 version = "2.2.4.dev6"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
@@ -46,4 +65,4 @@ attrs = ["attrs"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "68e251efb232fac5dfd54b25e76b1759820f467994aa44e93b8f6abd4a194405"
+content-hash = "f804d3f24cb1e35bfc5fc8d2c85aa2e356847fa8789c1425bb5579ff86dcc302"
