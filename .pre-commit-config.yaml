@@ -66,6 +66,10 @@ repos:
         files: ^tests/fixtures/simple_a/lib-a/pyproject.toml
         args: ["--no-update", "-C", "tests/fixtures/simple_a/lib-a"]
       - id: poetry-lock
+        name: poetry-lock (lib-b)
+        files: ^tests/fixtures/simple_a/lib-b/pyproject.toml
+        args: ["--no-update", "-C", "tests/fixtures/simple_a/lib-b"]
+      - id: poetry-lock
         name: poetry-lock(lib-auto-enabled)
         files: ^tests/fixtures/simple_a/lib-auto-enabled/pyproject.toml
         args: ["--no-update", "-C", "tests/fixtures/simple_a/lib-auto-enabled"]
@@ -93,6 +97,10 @@ repos:
         name: poetry-lock(lib-missing)
         files: ^tests/fixtures/simple_a/lib-missing/pyproject.toml
         args: ["--no-update", "-C", "tests/fixtures/simple_a/lib-missing"]
+      - id: poetry-lock
+        name: poetry-lock(lib-nested)
+        files: ^tests/fixtures/simple_a/lib-nested/pyproject.toml
+        args: ["--no-update", "-C", "tests/fixtures/simple_a/lib-nested"]
   # Checks:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
