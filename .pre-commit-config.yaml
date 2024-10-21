@@ -1,6 +1,5 @@
 fail_fast: false # such that all edits will run subsequently
 default_language_version:
-  # python: ~/.pyenv/versions/3.8.19/bin/python
   python: python3.8
 default_stages: [pre-commit]
 ci:

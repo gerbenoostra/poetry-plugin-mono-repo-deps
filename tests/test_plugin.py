@@ -65,10 +65,18 @@ def test_named_dependency_for_package(constraint: str, package: Package) -> None
 
 @pytest.mark.parametrize("constraint", ALLOWED_CONSTRAINTS)
 def test_named_dependency_for_package_with_deps(constraint: str) -> None:
+    expected_constraint_result = {
+        "~=": ">=1.0.0,<1.1.0",
+        "^": ">=1.0.0,<2.0.0",
+        ">=": ">=1.0.0",
+        "=": "==1.0.0",
+        "==": "==1.0.0",
+    }
     package_a = Package("A", "1.0.0")
     package_a.add_dependency(Factory.create_dependency("B", "^1.0"))
     package_a.files = [{"file": "foo", "hash": "456"}, {"file": "bar", "hash": "123"}]
-    create_named_dependency(constraint, package_a.to_dependency(), package_a)
+    dep = create_named_dependency(constraint, package_a.to_dependency(), package_a)
+    assert dep.to_pep_508() == f"a ({expected_constraint_result[constraint]})"
 
 
 @pytest.mark.parametrize("constraint", ALLOWED_CONSTRAINTS)
