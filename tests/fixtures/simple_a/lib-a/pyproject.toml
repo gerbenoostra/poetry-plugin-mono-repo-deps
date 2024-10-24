@@ -11,6 +11,7 @@ version = "0.0.1"
 [tool.poetry.dependencies]
 attrs = {version = "^23.2.0", optional = true}
 python = "^3.8"
+urllib3 = {git = "https://github.com/urllib3/urllib3.git"}
 
 [tool.poetry.extras]
 attrs = ["attrs"]

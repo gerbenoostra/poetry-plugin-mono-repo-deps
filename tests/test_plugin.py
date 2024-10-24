@@ -302,3 +302,45 @@ def test_lock_to_name_for_version_dependency(fixture_simple_a: Path) -> None:
         "optional": False,
         "python-versions": "*",
     }
+
+
+def test_lock_to_name_with_git_dependency(fixture_simple_a: Path) -> None:
+    """When a package is to modified, but its dependency is only specified by its version (thus as a string instead of a
+    dict)"""
+    poetry = prepare_test_poetry(fixture_simple_a / "lib-a")
+    package_a = Package(
+        "A", "1.0.0", source_type="git", source_url="https://github.com/urllib3/urllib3.git", source_reference="HEAD"
+    )
+    package_b = Package("B", "1.0.0", source_type="directory", source_url="../lib-b")
+    package_b.add_dependency(package_a.to_dependency())
+    locked_packages = poetry._locker._lock_packages([package_a, package_b])
+    for locked_package in locked_packages:
+        modify_locked_package_to_named(
+            Config(
+                enabled=True,
+                commands=["build", "export"],
+                constraint="~=",
+                source_types=["file", "directory", "git"],
+                only_develop=False,
+            ),
+            locked_package,
+            locked_packages,
+        )
+    assert locked_packages[0] == {
+        "name": "A",
+        "version": "1.0.0",
+        "description": "",
+        "files": [],
+        "optional": False,
+        "python-versions": "*",
+    }
+
+    assert locked_packages[1] == {
+        "name": "B",
+        "version": "1.0.0",
+        "dependencies": {"a": {"version": "1.0.0"}},
+        "description": "",
+        "files": [],
+        "optional": False,
+        "python-versions": "*",
+    }

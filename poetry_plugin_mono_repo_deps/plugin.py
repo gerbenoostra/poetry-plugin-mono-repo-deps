@@ -260,7 +260,7 @@ def _modify_locked_package_to_named(info: dict[str, Any]) -> None:
 
 def _modify_locked_dependency_to_named(dep: dict[str, Any] | str, dep_version: str) -> None:
     if isinstance(dep, str):
-        return  # it is just a version constraint
+        return  # pragma: no cover # it is just a version constraint
     del_dict_keys(dep, ["path", "develop", "url"])
     if "git" in dep:
         del_dict_keys(dep, ["git", "rev", "branch", "tag", "subdirectory"])
