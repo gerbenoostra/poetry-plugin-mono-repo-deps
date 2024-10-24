@@ -104,12 +104,23 @@ def test_nested_dependency() -> None:
 
 
 def test_lock_to_name_files(fixture_simple_a: Path) -> None:
+    """Verifies that a package with dependency can be modified."""
     poetry = prepare_test_poetry(fixture_simple_a / "lib-a")
     package_a = Package("A", "1.0.0")
     package_a.add_dependency(Factory.create_dependency("B", "^1.0"))
     package_a.files = [{"file": "foo", "hash": "456"}, {"file": "bar", "hash": "123"}]
     locked_packages = poetry._locker._lock_packages([package_a])
-    modify_locked_package_to_named(locked_packages[0])
+    modify_locked_package_to_named(
+        Config(
+            enabled=True,
+            commands=["build", "export"],
+            constraint="~=",
+            source_types=["file", "directory"],
+            only_develop=False,
+        ),
+        locked_packages[0],
+        locked_packages,
+    )
     assert locked_packages[0] == {
         "name": "A",
         "version": "1.0.0",
@@ -122,10 +133,21 @@ def test_lock_to_name_files(fixture_simple_a: Path) -> None:
 
 
 def test_lock_to_name_for_path_dependency(fixture_simple_a: Path) -> None:
+    """Verifies that a package's path source will be removed."""
     poetry = prepare_test_poetry(fixture_simple_a / "lib-a")
     package_a = Package("A", "1.0.0", source_type="directory", source_url="../lib-a")
     locked_packages = poetry._locker._lock_packages([package_a])
-    modify_locked_package_to_named(locked_packages[0])
+    modify_locked_package_to_named(
+        Config(
+            enabled=True,
+            commands=["build", "export"],
+            constraint="~=",
+            source_types=["file", "directory"],
+            only_develop=False,
+        ),
+        locked_packages[0],
+        locked_packages,
+    )
     assert locked_packages[0] == {
         "name": "A",
         "version": "1.0.0",
@@ -137,12 +159,110 @@ def test_lock_to_name_for_path_dependency(fixture_simple_a: Path) -> None:
 
 
 def test_lock_to_name_for_transitive_path_dependency(fixture_simple_a: Path) -> None:
+    """When both a package and its dependency is to modified (without extras)"""
     poetry = prepare_test_poetry(fixture_simple_a / "lib-a")
     package_a = Package("A", "1.0.0", source_type="directory", source_url="../lib-a")
+    package_b = Package("B", "1.0.0", source_type="directory", source_url="../lib-b")
+    package_b.add_dependency(package_a.to_dependency())
+    locked_packages = poetry._locker._lock_packages([package_a, package_b])
+    modify_locked_package_to_named(
+        Config(
+            enabled=True,
+            commands=["build", "export"],
+            constraint="~=",
+            source_types=["file", "directory"],
+            only_develop=False,
+        ),
+        locked_packages[1],
+        locked_packages,
+    )
+    assert locked_packages[1] == {
+        "name": "B",
+        "version": "1.0.0",
+        "dependencies": {"a": {"version": "1.0.0"}},
+        "description": "",
+        "files": [],
+        "optional": False,
+        "python-versions": "*",
+    }
+
+
+def test_lock_to_name_for_transitive_path_dependency_with_extras(fixture_simple_a: Path) -> None:
+    """When both a package and its dependency is to modified (and it has extras)"""
+    poetry = prepare_test_poetry(fixture_simple_a / "lib-a")
+    package_a = Package("A", "1.0.0", source_type="directory", source_url="../lib-a", features=["foo"])
+    package_b = Package("B", "1.0.0", source_type="directory", source_url="../lib-b")
+    package_b.add_dependency(package_a.to_dependency())
+    locked_packages = poetry._locker._lock_packages([package_a, package_b])
+    modify_locked_package_to_named(
+        Config(
+            enabled=True,
+            commands=["build", "export"],
+            constraint="~=",
+            source_types=["file", "directory"],
+            only_develop=False,
+        ),
+        locked_packages[1],
+        locked_packages,
+    )
+    assert locked_packages[1] == {
+        "name": "B",
+        "version": "1.0.0",
+        "dependencies": {"a": {"extras": ["foo"], "version": "1.0.0"}},
+        "description": "",
+        "files": [],
+        "optional": False,
+        "python-versions": "*",
+    }
+
+
+def test_lock_to_name_for_transitive_non_path_dependency(fixture_simple_a: Path) -> None:
+    """When a package is to modified, but its dependency not."""
+    poetry = prepare_test_poetry(fixture_simple_a / "lib-a")
+    package_a = Package("A", "1.0.0")
     package_b = Package("B", "1.0.0")
     package_b.add_dependency(package_a.to_dependency())
+    locked_packages = poetry._locker._lock_packages([package_a, package_b])
+    modify_locked_package_to_named(
+        Config(
+            enabled=True,
+            commands=["build", "export"],
+            constraint="~=",
+            source_types=["file", "directory"],
+            only_develop=False,
+        ),
+        locked_packages[1],
+        locked_packages,
+    )
+    assert locked_packages[1] == {
+        "name": "B",
+        "version": "1.0.0",
+        "dependencies": {"a": "1.0.0"},
+        "description": "",
+        "files": [],
+        "optional": False,
+        "python-versions": "*",
+    }
+
+
+def test_lock_to_name_for_unknown_dependency_version(fixture_simple_a: Path) -> None:
+    """When a package's dependency is to modified, but we don't know which version it has."""
+    poetry = prepare_test_poetry(fixture_simple_a / "lib-a")
+    package_a = Package("A", "1.0.0", source_type="directory", source_url="../lib-a")
+    package_b = Package("B", "1.0.0", source_type="directory", source_url="../lib-b")
+    package_b.add_dependency(package_a.to_dependency())
     locked_packages = poetry._locker._lock_packages([package_b])
-    modify_locked_package_to_named(locked_packages[0])
+    modify_locked_package_to_named(
+        Config(
+            enabled=True,
+            commands=["build", "export"],
+            constraint="~=",
+            source_types=["file", "directory"],
+            only_develop=False,
+        ),
+        locked_packages[0],
+        locked_packages,
+    )
     assert locked_packages[0] == {
         "name": "B",
         "version": "1.0.0",
@@ -154,17 +274,29 @@ def test_lock_to_name_for_transitive_path_dependency(fixture_simple_a: Path) -> 
     }
 
 
-def test_lock_to_name_for_transitive_path_dependency_with_extras(fixture_simple_a: Path) -> None:
+def test_lock_to_name_for_version_dependency(fixture_simple_a: Path) -> None:
+    """When a package is to modified, but its dependency is only specified by its version (thus as a string instead of a
+    dict)"""
     poetry = prepare_test_poetry(fixture_simple_a / "lib-a")
-    package_a = Package("A", "1.0.0", source_type="directory", source_url="../lib-a", features=["foo"])
-    package_b = Package("B", "1.0.0")
+    package_a = Package("A", "1.0.0")
+    package_b = Package("B", "1.0.0", source_type="directory", source_url="../lib-b")
     package_b.add_dependency(package_a.to_dependency())
     locked_packages = poetry._locker._lock_packages([package_b])
-    modify_locked_package_to_named(locked_packages[0])
+    modify_locked_package_to_named(
+        Config(
+            enabled=True,
+            commands=["build", "export"],
+            constraint="~=",
+            source_types=["file", "directory"],
+            only_develop=False,
+        ),
+        locked_packages[0],
+        locked_packages,
+    )
     assert locked_packages[0] == {
         "name": "B",
         "version": "1.0.0",
-        "dependencies": {"a": {"extras": ["foo"], "version": "*"}},
+        "dependencies": {"a": "1.0.0"},
         "description": "",
         "files": [],
         "optional": False,

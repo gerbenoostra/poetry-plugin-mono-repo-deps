@@ -161,17 +161,41 @@ class MonoRepoDepsPlugin(ApplicationPlugin):
         poetry = self._application.poetry
         locked_packages = cast(List[Dict[str, Any]], poetry._locker.lock_data["package"])
         for info in locked_packages:
-            if is_to_be_replaced_package(config, info):
-                modify_locked_package_to_named(info)
+            if is_to_be_replaced_package_lock(config, info):
+                modify_locked_package_to_named(config, info, locked_packages)
 
 
-def is_to_be_replaced_package(config: Config, locked_package_data: dict[str, Any]) -> bool:
+def is_to_be_replaced_package_lock(config: Config, locked_package_data: dict[str, Any]) -> bool:
     source = locked_package_data.get("source", {})
     source_type = source.get("type")
     can_be_develop = source_type == "directory"
     is_develop = can_be_develop and locked_package_data.get("develop", False)
     must_be_develop = config.only_develop
     return (source_type in config.source_types) and not (must_be_develop and can_be_develop and not is_develop)
+
+
+def is_to_be_replaced_dependency_lock(config: Config, locked_dependency_data: str | dict[str, Any]) -> bool:
+    # Could look like:
+    #   {path = "../lib-a", develop = true}
+    #   { version = "0.1.2", optional = true, markers = "extra == \"an_extra\""}
+    #   { version = "0.1.2", extras = ["foo", "bar"]}
+    #   or just the version constraint as a string:
+    #   *
+    #   "0.1.2"
+    #   ">=0.1.1, <0.1.3"
+    if not isinstance(locked_dependency_data, dict):
+        return False  # pragma: no cover (won't happen as we already checked it being a dict)
+
+    source_types = (
+        (["directory", "file"] if "path" in locked_dependency_data else [])
+        + (["url"] if "url" in locked_dependency_data else [])
+        + (["git"] if "git" in locked_dependency_data else [])
+    )
+    matches_source_type = any((source_type in config.source_types) for source_type in source_types)  # pragma: no cover
+    can_be_develop = "path" in locked_dependency_data
+    is_develop = can_be_develop and locked_dependency_data.get("develop", False)
+    must_be_develop = config.only_develop
+    return matches_source_type and not (must_be_develop and can_be_develop and not is_develop)
 
 
 def is_to_be_replaced_dependency(config: Config, dep: Dependency) -> bool:
@@ -207,21 +231,44 @@ def create_named_dependency(constraint: str, dep: Dependency, package: Package) 
     )
 
 
-def modify_locked_package_to_named(info: dict[str, Any]) -> None:
+def modify_locked_package_to_named(
+    config: Config, info: dict[str, Any], all_locked_packages: list[dict[str, Any]]
+) -> None:
+    if is_to_be_replaced_package_lock(config, info):
+        _modify_locked_package_to_named(info)
+        # remove path and develop from dependencies of dependencies
+        for dep_name, dep in info.get("dependencies", {}).items():
+            if is_to_be_replaced_dependency_lock(config, dep):
+                dep_version = get_current_locked_version(all_locked_packages, dep_name, "*")
+                _modify_locked_dependency_to_named(dep, dep_version)
+
+
+def get_current_locked_version(locked_packaged: list[dict[str, Any]], name: str, default: str) -> str:
+    for package in locked_packaged:
+        if package.get("name", "").lower() == name.lower():
+            return cast(str, package.get("version", default))
+    return default
+
+
+def _modify_locked_package_to_named(info: dict[str, Any]) -> None:
     # just deleting the develop and source will make exports only export the name
     if "develop" in info:  # pragma: no cover
         del info["develop"]
     if "source" in info:  # pragma: no cover
         del info["source"]
 
-    # remove path and develop from dependencies of dependencies
-    for _, dep in info.get("dependencies", {}).items():
-        if "path" not in dep:
-            continue
 
-        if "path" in dep:
-            del dep["path"]
-        if "develop" in dep:
-            del dep["develop"]
+def _modify_locked_dependency_to_named(dep: dict[str, Any] | str, dep_version: str) -> None:
+    if isinstance(dep, str):
+        return  # it is just a version constraint
+    del_dict_keys(dep, ["path", "develop", "url"])
+    if "git" in dep:
+        del_dict_keys(dep, ["git", "rev", "branch", "tag", "subdirectory"])
+    dep["version"] = dep.get("version", dep_version)
 
-        dep["version"] = dep.get("version", "*")
+
+def del_dict_keys(d: dict[str, Any], keys: list[str]) -> None:
+    """Delete all keys from the passed dict, if they exist."""
+    for key in keys:
+        if key in d:
+            del d[key]
