@@ -148,7 +148,7 @@ class MonoRepoDepsPlugin(ApplicationPlugin):
                         new = create_named_dependency(constraint, dep, package)
                         # new = Dependency(name, version or "*", extras=dep.extras)
                         io.write_line(
-                            f"Replacing path dependency {dep.to_pep_508()} in group "
+                            f"# Replacing path dependency {dep.to_pep_508()} in group "
                             f"{group.name} with {new.to_pep_508()}"
                         )
                         group.remove_dependency(name)
