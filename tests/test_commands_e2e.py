@@ -26,17 +26,25 @@ def test_export_locked(fixture_simple_a: Path, tmp_path: Path, module_dir: str) 
     assert err == ""
     requirements_content = requirements_path.read_text()
     fixed_str = f"""{setup.dep_name()}==0.0.1 ; python_version >= "3.8" and python_version < "4.0\""""
-    path_str = f"{setup.dep_name()} @ "
+    named_path_str = (
+        f"{setup.dep_name()} @ file://{fixture_simple_a / 'lib-a'}"
+        " ; python_version >= \"3.8\" and python_version < \"4.0\""
+    )
+    path_str = f"""-e file://{fixture_simple_a / 'lib-a'} ; python_version >= "3.8" and python_version < "4.0"""
+    _logger.info("Resulting requirement file:")
+    _logger.info(requirements_content)
     if setup.has_dep:
         if setup.enabled:
             assert fixed_str in requirements_content
+            assert named_path_str not in requirements_content
             assert path_str not in requirements_content
         else:
             assert fixed_str not in requirements_content
-            assert path_str in requirements_content
+            assert path_str in requirements_content or named_path_str in requirements_content
     else:
         assert fixed_str not in requirements_content
         assert path_str not in requirements_content
+        assert named_path_str not in requirements_content
 
 
 @pytest.mark.parametrize("module_dir", module_setups.keys())
