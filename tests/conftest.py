@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import shutil
 from pathlib import Path
 from typing import Any, Protocol
@@ -121,3 +122,11 @@ def env(tmp_path: Path) -> MockEnv:
 @pytest.fixture()
 def io() -> IO:
     return BufferedIO()
+
+
+@pytest.fixture(autouse=True)
+def setup_logging() -> None:
+    logging.getLogger().setLevel(logging.INFO)
+    for handler in logging.root.handlers:
+        logging.root.removeHandler(handler)
+    logging.root.addHandler(logging.StreamHandler())

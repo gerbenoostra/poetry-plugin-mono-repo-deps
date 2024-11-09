@@ -25,12 +25,13 @@ jobs:
 
 
   Tests:
-    name: ${{ matrix.os }} / ${{ matrix.python-version }}
+    name: ${{ matrix.os }} / py${{ matrix.python-version }} / poetry${{ matrix.poetry-version }}
     runs-on: ${{ matrix.image }}
     strategy:
       matrix:
         os: [Ubuntu, macOS, Windows]
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
+        poetry-version: ["==1.7.0", "==1.7.1", "==1.8.0", "==1.8.1", "==1.8.2", "==1.8.3", "==1.8.4", ""]
         include:
           - os: Ubuntu
             image: ubuntu-latest
@@ -65,19 +66,45 @@ jobs:
       - name: Install poetry
         shell: bash
         run: |
-          pipx install poetry
+          pipx install poetry${{ matrix.poetry-version }}
           pipx ensurepath
 
+      # as the poetry version specification will modify the lock, need to calculate the hash once, to be able to correctly cache the result
+      - name: Get repo lock hash
+        id: repo-lock-hash
+        run: |
+          echo "hash=$(git hash-object poetry.lock)" >> $GITHUB_OUTPUT
+
       - name: Set up cache
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         id: cache
         with:
           path: .venv
-          key: venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('**/poetry.lock') }}
+          key: venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ matrix.poetry-version }}-${{ steps.repo-lock-hash.outputs.hash }}
 
       - name: Ensure cache is healthy
         if: steps.cache.outputs.cache-hit == 'true'
         run: timeout 10s poetry run pip --version || rm -rf .venv
+
+      - name: Specify poetry version
+        run: |
+          python -m pip install --upgrade pip
+          poetry env use $(which python)
+          echo "Python version = $(python --version)"
+          echo "Poetry's Python version = $(poetry run python --version)"
+          echo "Poetry version = $(poetry --version)"
+          poetry remove poetry poetry-core
+          poetry add poetry${{ matrix.poetry-version }}
+          echo "Poetry's Python version = $(poetry run python --version)"
+          echo "Poetry version within poetry venv = $(poetry run poetry --version)"
+
+      # because our poetry update modifies the cache
+      - name: Update cache
+        id: cache-save
+        uses: actions/cache/save@v4
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ matrix.poetry-version }}-${{ steps.repo-lock-hash.outputs.hash }}
 
       - name: Install dependencies
         run: poetry install --with github-actions

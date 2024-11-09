@@ -70,9 +70,12 @@ class TestLocker(Locker):
 
     def _write_lock_data(self, data: TOMLDocument) -> None:
         if self._write:
+            _logger.info("Writing lock data")
             super()._write_lock_data(data)
             self._locked = True
             return
+        else:
+            _logger.info("Not writing lock data")
 
         self._lock_data = data
 
@@ -145,7 +148,10 @@ class TestExecutor(Executor):
         rc: int = super()._do_execute_operation(operation)
 
         if not operation.skipped:
+            _logger.info(f"Running {operation.job_type} for {operation.package}")
             getattr(self, f"_{operation.job_type}s").append(operation.package)
+        else:
+            _logger.info(f"Skipping {operation.job_type} for {operation.package}")
 
         return rc
 
@@ -164,6 +170,7 @@ def prepare_test_app(path: Path) -> PoetryTestApplication:
     test_app = PoetryTestApplication(poetry)
     io = test_app.create_io()
     io.output.set_verbosity(Verbosity.DEBUG)
+    _logger.info("Loading plugins")
     test_app._load_plugins(io)
     test_app.auto_exits(False)
     return test_app
@@ -171,6 +178,7 @@ def prepare_test_app(path: Path) -> PoetryTestApplication:
 
 def prepare_test_poetry(proj_path: Path) -> Poetry:
     locker = TestLocker(proj_path)
+    _logger.info("Creating test poetry")
     poetry = Factory().create_poetry(proj_path)
     poetry._locker = locker
     return poetry
@@ -189,8 +197,10 @@ def run_test_app(args: list[str]) -> tuple[str, str]:
     err_stream = StreamOutput(err)
     instr = ArgvInput(args)
     io = IO(instr, out_stream, err_stream)
+    _logger.info("Loading plugins")
     test_app._load_plugins(io)
     test_app.auto_exits(False)
+    _logger.info("Running poetry test app")
     test_app.run(
         instr,
         out_stream,
@@ -199,9 +209,11 @@ def run_test_app(args: list[str]) -> tuple[str, str]:
     out_stream.flush()
     err_stream.flush()
     out_value = out.getvalue()
+    _logger.info("Poetry run output:")
     _logger.info(out_value)
     err_value = err.getvalue()
-    _logger.error(err_value)
+    _logger.info("Poetry run error output:")
+    _logger.info(err_value)
     err_value = err_value.replace(export_warning, "")
     err_value = os.linesep.join(
         [line for line in err_value.splitlines() if not line.startswith("Creating virtualenv ")]
@@ -220,6 +232,7 @@ class AppRunner:
         err_stream = StreamOutput(err)
         instr = ArgvInput(args)
         instr.bind(self._test_app.definition)
+        _logger.info("Running poetry test app")
         self._test_app.run(
             instr,
             out_stream,
@@ -228,9 +241,11 @@ class AppRunner:
         out_stream.flush()
         err_stream.flush()
         out_value = out.getvalue()
+        _logger.info("Poetry run output:")
         _logger.info(out_value)
         err_value = err.getvalue()
-        _logger.error(err_value)
+        _logger.info("Poetry run error output:")
+        _logger.info(err_value)
         err_value = err_value.replace(export_warning, "")
         err_value = os.linesep.join(
             [line for line in err_value.splitlines() if not line.startswith("Creating virtualenv ")]
