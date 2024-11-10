@@ -85,8 +85,7 @@ python = "^3.8"
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.9.0"
-poetry = "^1.8.2"
-poetry-plugin-export = "^1.7.1"
+poetry-plugin-export = "^1.6.0"
 pytest = "^8.0.2"
 pytest-cov = "^4.1.0"
 pytest-mock = "^3.14.0"

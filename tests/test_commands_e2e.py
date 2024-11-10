@@ -84,8 +84,10 @@ def test_build_artifact(fixture_simple_a: Path, tmp_path: Path, module_dir: str)
     package_name = package_name_of(module_dir)
     os.chdir(fixture_simple_a / module_dir)
 
-    dist_path = tmp_path / "dist"
-    _out, err = run_test_app(["poetry", "build", "-vvv", "--output", str(dist_path)])
+    _out, err = run_test_app(["poetry", "build", "-vvv"])
+    # using the --output argument is nice, but that needs poetry >=1.8.0
+    # to be able to test with 1.7.0, deriving the dist path from the cwd
+    dist_path = Path(os.getcwd()) / "dist"
     assert err == ""
 
     with ZipFile(dist_path / f"{package_name}-0.0.1-py3-none-any.whl") as whl:
