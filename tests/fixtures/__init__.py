@@ -21,6 +21,14 @@ class Dep:
             return "[" + ",".join(self.extras) + "]"
         return ""
 
+    def version_range(self) -> str:
+        major, minor, *_ = self.version.split(".")
+        if int(major) == 0:
+            upper_bound = f"{major}.{int(minor) + 1}.0"
+        else:
+            upper_bound = f"{int(major) + 1}.0.0"
+        return f"(>={self.version},<{upper_bound})"
+
 
 @dataclass
 class TestSetup:
@@ -29,6 +37,7 @@ class TestSetup:
 
     enabled: bool = True
     deps: list[Dep] | None = None
+    transitive_deps: list[Dep] | None = None
 
     @property
     def has_deps(self) -> bool:
@@ -47,7 +56,11 @@ module_setups = {
     "lib-enabled-no-commands": TestSetup(enabled=False, deps=[Dep(name="lib-a")]),
     "lib-independent": TestSetup(enabled=True, deps=[]),
     "lib-missing": TestSetup(enabled=False, deps=[Dep(name="lib-a")]),
-    "lib-nested": TestSetup(enabled=True, deps=[Dep(name="lib-b"), Dep(name="dummy-poetry", version="1.2.3")]),
+    "lib-nested": TestSetup(
+        enabled=True,
+        deps=[Dep(name="lib-b")],
+        transitive_deps=[Dep(name="lib-a"), Dep(name="dummy-poetry", version="1.2.3")],
+    ),
 }
 
 

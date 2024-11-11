@@ -27,7 +27,7 @@ def test_export_locked(fixture_simple_a: Path, tmp_path: Path, module_dir: str) 
     requirements_content = requirements_path.read_text()
     _logger.info("Resulting requirement file:")
     _logger.info(requirements_content)
-    for dep in setup.deps or []:
+    for dep in (setup.deps or []) + (setup.transitive_deps or []):
         fixed_str = f"""{dep.to_pep_508()} ; python_version >= "3.8" and python_version < "4.0\""""
         named_path_str = (
             f"{dep.name} @ {(fixture_simple_a / 'lib-a').as_uri()}"
@@ -103,6 +103,7 @@ def test_build_artifact(fixture_simple_a: Path, tmp_path: Path, module_dir: str)
 
 
 def validate_package_metadata(setup: TestSetup, content: list[str]) -> None:
+    _logger.info("Validating package metadata:")
     _logger.info("\n".join(content))
     # path dependency should be removed if enabled
     for dep in setup.deps or []:
@@ -114,11 +115,15 @@ def validate_package_metadata(setup: TestSetup, content: list[str]) -> None:
 
     # named dependency should be inserted if enabled
     for dep in setup.deps or []:
-        fixed_str = f"Requires-Dist: {dep.full_name} (>=0.0.1,<0.1.0)"
+        fixed_str = f"Requires-Dist: {dep.full_name} {dep.version_range()}"
         if setup.enabled:
             assert fixed_str in content
         else:
             assert fixed_str not in content
+    # transitive dependencies should not be added
+    for dep in setup.transitive_deps or []:
+        fixed_str = f"Requires-Dist: {dep.full_name} {dep.version_range()}"
+        assert fixed_str not in content
 
 
 def test_outside_project_version(tmp_path: Path) -> None:
