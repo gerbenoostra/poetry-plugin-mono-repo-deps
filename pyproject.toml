@@ -8,7 +8,7 @@ changelog_incremental = true
 name = "cz_conventional_commits"
 tag_format = "v$version"
 update_changelog_on_bump = true
-version = "0.2.2"
+version = "0.2.3"
 version_files = [
   "VERSION",
   "pyproject.toml:^version = ",
@@ -75,7 +75,7 @@ packages = [
 ]
 readme = "README.md"
 repository = "https://github.com/gerbenoostra/poetry-plugin-mono-repo-deps"
-version = "0.2.2"
+version = "0.2.3"
 
 [tool.poetry.dependencies]
 cffi = {version = "^1.17.0", markers = "python_version >= \"3.13\""}

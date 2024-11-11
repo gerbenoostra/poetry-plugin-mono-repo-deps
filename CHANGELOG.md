@@ -1,3 +1,9 @@
+## v0.2.3 (2024-11-11)
+
+### Fix
+
+- Resolve dependencies of dependencies
+
 ## v0.2.2 (2024-11-10)
 
 ### Fix
