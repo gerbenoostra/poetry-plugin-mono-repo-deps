@@ -34,10 +34,29 @@ url = "https://github.com/gerbenoostra/dummy_poetry.git"
 reference = "HEAD"
 resolved_reference = "c8db078494dc5a52248af190e6afd681ba4debc8"
 
+[[package]]
+name = "lib-a"
+version = "0.0.1"
+description = "Example library"
+optional = false
+python-versions = "^3.8"
+files = []
+develop = true
+
+[package.dependencies]
+dummy-poetry = {git = "https://github.com/gerbenoostra/dummy_poetry.git"}
+
+[package.extras]
+attrs = ["attrs (>=23.2.0,<24.0.0)"]
+
+[package.source]
+type = "directory"
+url = "../lib-a"
+
 [extras]
 attrs = ["attrs"]
 
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "95024ba069a5f1cb84aea1039771bbc54b0d517ea0a3e3f523986d5e671b37ec"
+content-hash = "f804d3f24cb1e35bfc5fc8d2c85aa2e356847fa8789c1425bb5579ff86dcc302"
