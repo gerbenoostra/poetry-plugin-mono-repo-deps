@@ -47,7 +47,7 @@ module_setups = {
     "lib-enabled-no-commands": TestSetup(enabled=False, deps=[Dep(name="lib-a")]),
     "lib-independent": TestSetup(enabled=True, deps=[]),
     "lib-missing": TestSetup(enabled=False, deps=[Dep(name="lib-a")]),
-    "lib-nested": TestSetup(enabled=True, deps=[Dep(name="lib-b")]),
+    "lib-nested": TestSetup(enabled=True, deps=[Dep(name="lib-b"), Dep(name="dummy-poetry", version="1.2.3")]),
 }
 
 

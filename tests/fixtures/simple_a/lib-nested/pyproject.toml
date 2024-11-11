@@ -13,5 +13,6 @@ lib-b = {path = "../lib-b", develop = true}
 python = "^3.8"
 
 [tool.poetry-monorepo.deps]
+source_types = ["file", "directory", "git"]
 
 # enables path dependency replacement
