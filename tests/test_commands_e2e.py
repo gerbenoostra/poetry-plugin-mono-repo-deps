@@ -28,7 +28,7 @@ def test_export_locked(fixture_simple_a: Path, tmp_path: Path, module_dir: str) 
     _logger.info("Resulting requirement file:")
     _logger.info(requirements_content)
     for dep in setup.deps or []:
-        fixed_str = f"""{dep.to_pep_508()}==0.0.1 ; python_version >= "3.8" and python_version < "4.0\""""
+        fixed_str = f"""{dep.to_pep_508()} ; python_version >= "3.8" and python_version < "4.0\""""
         named_path_str = (
             f"{dep.name} @ {(fixture_simple_a / 'lib-a').as_uri()}"
             " ; python_version >= \"3.8\" and python_version < \"4.0\""

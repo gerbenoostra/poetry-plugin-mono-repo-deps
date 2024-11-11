@@ -20,25 +20,19 @@ tests-mypy = ["mypy (>=1.6)", "pytest-mypy-plugins"]
 tests-no-zope = ["attrs[tests-mypy]", "cloudpickle", "hypothesis", "pympler", "pytest (>=4.3.0)", "pytest-xdist[psutil]"]
 
 [[package]]
-name = "urllib3"
-version = "2.2.4.dev6"
-description = "HTTP library with thread-safe connection pooling, file post, and more."
+name = "dummy-poetry"
+version = "1.2.3"
+description = "Dummy poetry project to use as example git dependency in poetry-plugin-mono-repo-deps tests"
 optional = false
-python-versions = ">=3.8"
+python-versions = "^3.8"
 files = []
 develop = false
 
-[package.extras]
-brotli = ["brotli (>=1.0.9)", "brotlicffi (>=0.8.0)"]
-h2 = ["h2 (>=4,<5)"]
-socks = ["pysocks (>=1.5.6,!=1.5.7,<2.0)"]
-zstd = ["zstandard (>=0.18.0)"]
-
 [package.source]
 type = "git"
-url = "https://github.com/urllib3/urllib3.git"
+url = "https://github.com/gerbenoostra/dummy_poetry.git"
 reference = "HEAD"
-resolved_reference = "f9d37add7983d441b151146db447318dff4186c9"
+resolved_reference = "c8db078494dc5a52248af190e6afd681ba4debc8"
 
 [extras]
 attrs = ["attrs"]
@@ -46,4 +40,4 @@ attrs = ["attrs"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "68e251efb232fac5dfd54b25e76b1759820f467994aa44e93b8f6abd4a194405"
+content-hash = "95024ba069a5f1cb84aea1039771bbc54b0d517ea0a3e3f523986d5e671b37ec"

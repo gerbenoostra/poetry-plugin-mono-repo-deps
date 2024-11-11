@@ -65,13 +65,13 @@ repos:
         files: ^tests/fixtures/simple_a/lib-a/pyproject.toml
         args: ["--no-update", "-C", "tests/fixtures/simple_a/lib-a"]
       - id: poetry-lock
-        name: poetry-lock (lib-b)
-        files: ^tests/fixtures/simple_a/lib-b/pyproject.toml
-        args: ["--no-update", "-C", "tests/fixtures/simple_a/lib-b"]
-      - id: poetry-lock
         name: poetry-lock(lib-auto-enabled)
         files: ^tests/fixtures/simple_a/lib-auto-enabled/pyproject.toml
         args: ["--no-update", "-C", "tests/fixtures/simple_a/lib-auto-enabled"]
+      - id: poetry-lock
+        name: poetry-lock (lib-b)
+        files: ^tests/fixtures/simple_a/lib-b/pyproject.toml
+        args: ["--no-update", "-C", "tests/fixtures/simple_a/lib-b"]
       - id: poetry-lock
         name: poetry-lock(lib-disabled)
         files: ^tests/fixtures/simple_a/lib-disabled/pyproject.toml
