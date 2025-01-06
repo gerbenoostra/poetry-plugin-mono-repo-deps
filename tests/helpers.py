@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 from io import StringIO
 from pathlib import Path
 from typing import Any
@@ -214,6 +215,10 @@ def run_test_app(args: list[str]) -> tuple[str, str]:
     err_value = err.getvalue()
     _logger.info("Poetry run error output:")
     _logger.info(err_value)
+    # clear python detect warning
+    err_value = re.sub(
+        "Trying to detect current active python executable as specified in the config.\nFound: .*\n", "", err_value
+    )
     err_value = err_value.replace(export_warning, "")
     err_value = os.linesep.join(
         [line for line in err_value.splitlines() if not line.startswith("Creating virtualenv ")]

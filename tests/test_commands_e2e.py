@@ -63,6 +63,7 @@ version = "{dep.version}"
 description = "Example library"
 optional = false
 python-versions = "^3.8"
+groups = ["main"]
 files = []
 develop = true
 """

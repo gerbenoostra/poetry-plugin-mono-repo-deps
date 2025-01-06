@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 from poetry.core.packages.package import Package
 from poetry.factory import Factory
+from poetry.packages.transitive_package_info import TransitivePackageInfo
 
 from poetry_plugin_mono_repo_deps.plugin import (
     ALLOWED_CONSTRAINTS,
@@ -109,7 +110,7 @@ def test_lock_to_name_files(fixture_simple_a: Path) -> None:
     package_a = Package("A", "1.0.0")
     package_a.add_dependency(Factory.create_dependency("B", "^1.0"))
     package_a.files = [{"file": "foo", "hash": "456"}, {"file": "bar", "hash": "123"}]
-    locked_packages = poetry._locker._lock_packages([package_a])
+    locked_packages = poetry._locker._lock_packages({package_a: TransitivePackageInfo(0, {"main"}, {})})
     modify_locked_package_to_named(
         Config(
             enabled=True,
@@ -129,6 +130,7 @@ def test_lock_to_name_files(fixture_simple_a: Path) -> None:
         "description": "",
         "optional": False,
         "python-versions": "*",
+        "groups": ["main"],
     }
 
 
@@ -136,7 +138,7 @@ def test_lock_to_name_for_path_dependency(fixture_simple_a: Path) -> None:
     """Verifies that a package's path source will be removed."""
     poetry = prepare_test_poetry(fixture_simple_a / "lib-a")
     package_a = Package("A", "1.0.0", source_type="directory", source_url="../lib-a")
-    locked_packages = poetry._locker._lock_packages([package_a])
+    locked_packages = poetry._locker._lock_packages({package_a: TransitivePackageInfo(0, {"main"}, {})})
     modify_locked_package_to_named(
         Config(
             enabled=True,
@@ -155,6 +157,7 @@ def test_lock_to_name_for_path_dependency(fixture_simple_a: Path) -> None:
         "files": [],
         "optional": False,
         "python-versions": "*",
+        "groups": ["main"],
     }
 
 
@@ -164,7 +167,9 @@ def test_lock_to_name_for_transitive_path_dependency(fixture_simple_a: Path) -> 
     package_a = Package("A", "1.0.0", source_type="directory", source_url="../lib-a")
     package_b = Package("B", "1.0.0", source_type="directory", source_url="../lib-b")
     package_b.add_dependency(package_a.to_dependency())
-    locked_packages = poetry._locker._lock_packages([package_a, package_b])
+    locked_packages = poetry._locker._lock_packages(
+        {package_a: TransitivePackageInfo(0, {"main"}, {}), package_b: TransitivePackageInfo(0, {"main"}, {})}
+    )
     modify_locked_package_to_named(
         Config(
             enabled=True,
@@ -184,6 +189,7 @@ def test_lock_to_name_for_transitive_path_dependency(fixture_simple_a: Path) -> 
         "files": [],
         "optional": False,
         "python-versions": "*",
+        "groups": ["main"],
     }
 
 
@@ -193,7 +199,9 @@ def test_lock_to_name_for_transitive_path_dependency_with_extras(fixture_simple_
     package_a = Package("A", "1.0.0", source_type="directory", source_url="../lib-a", features=["foo"])
     package_b = Package("B", "1.0.0", source_type="directory", source_url="../lib-b")
     package_b.add_dependency(package_a.to_dependency())
-    locked_packages = poetry._locker._lock_packages([package_a, package_b])
+    locked_packages = poetry._locker._lock_packages(
+        {package_a: TransitivePackageInfo(0, {"main"}, {}), package_b: TransitivePackageInfo(0, {"main"}, {})}
+    )
     modify_locked_package_to_named(
         Config(
             enabled=True,
@@ -213,6 +221,7 @@ def test_lock_to_name_for_transitive_path_dependency_with_extras(fixture_simple_
         "files": [],
         "optional": False,
         "python-versions": "*",
+        "groups": ["main"],
     }
 
 
@@ -222,7 +231,9 @@ def test_lock_to_name_for_transitive_non_path_dependency(fixture_simple_a: Path)
     package_a = Package("A", "1.0.0")
     package_b = Package("B", "1.0.0")
     package_b.add_dependency(package_a.to_dependency())
-    locked_packages = poetry._locker._lock_packages([package_a, package_b])
+    locked_packages = poetry._locker._lock_packages(
+        {package_a: TransitivePackageInfo(0, {"main"}, {}), package_b: TransitivePackageInfo(0, {"main"}, {})}
+    )
     modify_locked_package_to_named(
         Config(
             enabled=True,
@@ -242,6 +253,7 @@ def test_lock_to_name_for_transitive_non_path_dependency(fixture_simple_a: Path)
         "files": [],
         "optional": False,
         "python-versions": "*",
+        "groups": ["main"],
     }
 
 
@@ -251,7 +263,7 @@ def test_lock_to_name_for_unknown_dependency_version(fixture_simple_a: Path) -> 
     package_a = Package("A", "1.0.0", source_type="directory", source_url="../lib-a")
     package_b = Package("B", "1.0.0", source_type="directory", source_url="../lib-b")
     package_b.add_dependency(package_a.to_dependency())
-    locked_packages = poetry._locker._lock_packages([package_b])
+    locked_packages = poetry._locker._lock_packages({package_b: TransitivePackageInfo(0, {"main"}, {})})
     modify_locked_package_to_named(
         Config(
             enabled=True,
@@ -271,6 +283,7 @@ def test_lock_to_name_for_unknown_dependency_version(fixture_simple_a: Path) -> 
         "files": [],
         "optional": False,
         "python-versions": "*",
+        "groups": ["main"],
     }
 
 
@@ -281,7 +294,7 @@ def test_lock_to_name_for_version_dependency(fixture_simple_a: Path) -> None:
     package_a = Package("A", "1.0.0")
     package_b = Package("B", "1.0.0", source_type="directory", source_url="../lib-b")
     package_b.add_dependency(package_a.to_dependency())
-    locked_packages = poetry._locker._lock_packages([package_b])
+    locked_packages = poetry._locker._lock_packages({package_b: TransitivePackageInfo(0, {"main"}, {})})
     modify_locked_package_to_named(
         Config(
             enabled=True,
@@ -301,6 +314,7 @@ def test_lock_to_name_for_version_dependency(fixture_simple_a: Path) -> None:
         "files": [],
         "optional": False,
         "python-versions": "*",
+        "groups": ["main"],
     }
 
 
@@ -313,7 +327,9 @@ def test_lock_to_name_with_git_dependency(fixture_simple_a: Path) -> None:
     )
     package_b = Package("B", "1.0.0", source_type="directory", source_url="../lib-b")
     package_b.add_dependency(package_a.to_dependency())
-    locked_packages = poetry._locker._lock_packages([package_a, package_b])
+    locked_packages = poetry._locker._lock_packages(
+        {package_a: TransitivePackageInfo(0, {"main"}, {}), package_b: TransitivePackageInfo(0, {"main"}, {})}
+    )
     for locked_package in locked_packages:
         modify_locked_package_to_named(
             Config(
@@ -333,6 +349,7 @@ def test_lock_to_name_with_git_dependency(fixture_simple_a: Path) -> None:
         "files": [],
         "optional": False,
         "python-versions": "*",
+        "groups": ["main"],
     }
 
     assert locked_packages[1] == {
@@ -343,4 +360,5 @@ def test_lock_to_name_with_git_dependency(fixture_simple_a: Path) -> None:
         "files": [],
         "optional": False,
         "python-versions": "*",
+        "groups": ["main"],
     }
