@@ -8,11 +8,11 @@ help:
 venv: ${VENV_DIR}/.touchfile
 
 ${VENV_DIR}/.touchfile: poetry.lock
-	poetry install --sync
+	poetry sync || poetry install --sync
 	touch ${VENV_DIR}/.touchfile
 
 poetry.lock: pyproject.toml
-	poetry lock --no-update
+	poetry lock --no-update || poetry lock
 	touch poetry.lock
 
 clean:
