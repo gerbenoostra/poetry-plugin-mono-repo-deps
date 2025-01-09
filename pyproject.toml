@@ -75,7 +75,7 @@ packages = [
 ]
 readme = "README.md"
 repository = "https://github.com/gerbenoostra/poetry-plugin-mono-repo-deps"
-version = "0.3.0"
+version = "0.2.3"
 
 [tool.poetry.dependencies]
 cffi = {version = "^1.17.0", markers = "python_version >= \"3.13\""}
