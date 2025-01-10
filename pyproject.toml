@@ -44,7 +44,7 @@ disallow_untyped_defs = true
 exclude = ["^tests/fixtures/simple_a"]
 explicit_package_bases = true
 implicit_reexport = false
-python_version = "3.8"
+python_version = "3.9"
 strict_equality = true
 warn_redundant_casts = true
 warn_return_any = true
@@ -79,8 +79,8 @@ version = "0.2.3"
 
 [tool.poetry.dependencies]
 cffi = {version = "^1.17.0", markers = "python_version >= \"3.13\""}
-poetry = "^1.7.0"
-poetry-core = "^1.7.0"
+poetry = ">=1.7.0"
+poetry-core = ">=1.7.0"
 python = "^3.8"
 
 [tool.poetry.group.dev.dependencies]

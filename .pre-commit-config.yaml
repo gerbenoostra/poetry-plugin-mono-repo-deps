@@ -118,8 +118,14 @@ repos:
     rev: v1.12.0
     hooks:
       - id: mypy
+        name: mypy (poetry==1.7.1)
         args: ["--config-file", "pyproject.toml"]
         additional_dependencies: ["poetry~=1.7.1", "poetry-core~=1.8.1"]
+      - id: mypy
+        name: mypy (poetry==2.0.0)
+        language_version: python3.9
+        args: ["--config-file", "pyproject.toml", "--no-warn-unused-ignores"]
+        additional_dependencies: ["poetry~=2.0.0", "poetry-core~=2.0.0"]
   - repo: https://github.com/python-poetry/poetry
     rev: "1.8.0"
     hooks:

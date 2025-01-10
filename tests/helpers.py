@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 from io import StringIO
 from pathlib import Path
 from typing import Any
@@ -184,6 +185,30 @@ def prepare_test_poetry(proj_path: Path) -> Poetry:
     return poetry
 
 
+try:
+    # Since Poetry==2.0.0, we need to pass a dict
+    # We try to stay as long as possible compatible with Poetry<2.0.0 too
+    from poetry.packages.transitive_package_info import TransitivePackageInfo
+
+    POETRY_VERSION = 2
+
+    def lock_packages(poetry: Poetry, packages: list[Package]) -> list[dict[str, Any]]:
+        """Wraps locker to keep it consistent across Poetry 2.0.0 & Poetry <2.0.0."""
+        locked_packages = poetry._locker._lock_packages(
+            # following arg-type ignore is for mypy with poetry<2.0
+            # but need an unused-ignore for mypy with poetry>=2.0
+            {package: TransitivePackageInfo(0, {"main"}, {}) for package in packages}  # type: ignore[arg-type,unused-ignore]
+        )
+        return locked_packages
+except ImportError:
+    POETRY_VERSION = 1
+
+    def lock_packages(poetry: Poetry, packages: list[Package]) -> list[dict[str, Any]]:
+        # following arg-type ignore is for mypy with poetry>=2.0
+        # but need an unused-ignore for mypy with poetry<2.0
+        return poetry._locker._lock_packages(packages)  # type: ignore[arg-type,unused-ignore]
+
+
 export_warning = "Warning: poetry-plugin-export will not be installed by default in a future version of Poetry.\nIn order to avoid a breaking change and make your automation forward-compatible, please install poetry-plugin-export explicitly. See https://python-poetry.org/docs/plugins/#using-plugins for details on how to install a plugin.\nTo disable this warning run 'poetry config warnings.export false'.\n"  # noqa: E501 Line too long
 
 
@@ -214,6 +239,10 @@ def run_test_app(args: list[str]) -> tuple[str, str]:
     err_value = err.getvalue()
     _logger.info("Poetry run error output:")
     _logger.info(err_value)
+    # clear python detect warning
+    err_value = re.sub(
+        "Trying to detect current active python executable as specified in the config.\nFound: .*\n", "", err_value
+    )
     err_value = err_value.replace(export_warning, "")
     err_value = os.linesep.join(
         [line for line in err_value.splitlines() if not line.startswith("Creating virtualenv ")]
