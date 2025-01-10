@@ -10,7 +10,7 @@ from zipfile import ZipFile
 import pytest
 
 from tests.fixtures import TestSetup, module_setups, package_name_of
-from tests.helpers import run_test_app
+from tests.helpers import POETRY_VERSION, run_test_app
 
 _logger = logging.getLogger(__name__)
 
@@ -55,6 +55,7 @@ def test_ignored_command(fixture_simple_a: Path, tmp_path: Path, module_dir: str
     text = (tmp_path / "simple_a" / module_dir / "poetry.lock").read_text()
     _logger.info(text)
     setup = module_setups[module_dir]
+    groups_def = """groups = ["main"]\n""" if POETRY_VERSION >= 2 else ""
     for dep in setup.deps or []:
         assert (
             f"""[package]]
@@ -63,8 +64,7 @@ version = "{dep.version}"
 description = "Example library"
 optional = false
 python-versions = "^3.8"
-groups = ["main"]
-files = []
+{groups_def}files = []
 develop = true
 """
             in text

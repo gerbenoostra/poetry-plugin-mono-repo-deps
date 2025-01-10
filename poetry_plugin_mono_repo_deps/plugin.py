@@ -200,7 +200,7 @@ def is_to_be_replaced_dependency_lock(config: Config, locked_dependency_data: st
 
 def is_to_be_replaced_dependency(config: Config, dep: Dependency) -> bool:
     can_be_develop = hasattr(dep, "_develop")
-    is_develop = can_be_develop and dep._develop
+    is_develop = can_be_develop and dep._develop  # type: ignore[attr-defined]
     must_be_develop = config.only_develop
     is_to_be_replaced = (dep._source_type in config.source_types) and not (
         must_be_develop and can_be_develop and not is_develop
