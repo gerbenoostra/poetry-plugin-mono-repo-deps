@@ -23,18 +23,22 @@ def test_export_locked(fixture_simple_a: Path, tmp_path: Path, module_dir: str) 
 
     # export should contain the dependency as a name
     requirements_path = tmp_path / "reqs.txt"
-    _out, err = run_test_app(["poetry", "export", "-vvv", "--output", str(requirements_path)])
+    args = ["poetry", "export", "-vvv", "--output", str(requirements_path)]
+    # include optional dependencies by exporting the extras
+    # otherwise our optional dependency will not be listed at all
+    for dep in setup.deps or []:
+        if dep.extras_environment_markers and len(dep.extras_environment_markers) > 0:
+            args.append("--extras")
+            args.append(dep.extras_environment_markers[0])
+    _out, err = run_test_app(args)
     assert err == ""
     requirements_content = requirements_path.read_text()
     _logger.info("Resulting requirement file:")
     _logger.info(requirements_content)
     for dep in (setup.deps or []) + (setup.transitive_deps or []):
-        fixed_str = f"""{dep.to_pep_508()} ; python_version >= "3.8" and python_version < "4.0\""""
-        named_path_str = (
-            f"{dep.name} @ {(fixture_simple_a / 'lib-a').as_uri()}"
-            " ; python_version >= \"3.8\" and python_version < \"4.0\""
-        )
-        path_str = f"""-e {(fixture_simple_a / 'lib-a').as_uri()} ; python_version >= "3.8" and python_version < "4.0"""
+        fixed_str = dep.export_line()
+        named_path_str = f"{dep.name} @ {(fixture_simple_a / 'lib-a').as_uri()}"
+        path_str = f"-e {(fixture_simple_a / 'lib-a').as_uri()}"
         if setup.enabled:
             assert fixed_str in requirements_content
             assert named_path_str not in requirements_content
@@ -56,20 +60,16 @@ def test_ignored_command(fixture_simple_a: Path, tmp_path: Path, module_dir: str
     text = (tmp_path / "simple_a" / module_dir / "poetry.lock").read_text()
     _logger.info(text)
     setup = module_setups[module_dir]
-    groups_def = """groups = ["main"]\n""" if POETRY_VERSION >= 2 else ""
     for dep in setup.deps or []:
+        # first ensure that our package occurs somewhere (just by name)
         assert (
             f"""[package]]
 name = "{dep.name}"
 version = "{dep.version}"
-description = "Example library"
-optional = false
-python-versions = "^3.8"
-{groups_def}files = []
-develop = true
 """
             in text
         )
+        # then ensure that there still are path dependencies (assume it is our package)
         assert (
             f"""[package.source]
 type = "directory"
@@ -79,7 +79,7 @@ url = "../{dep.name}"
 
 
 @pytest.mark.parametrize("module_dir", module_setups.keys())
-def test_build_artifact(fixture_simple_a: Path, tmp_path: Path, module_dir: str) -> None:
+def test_build_artifact(fixture_simple_a: Path, module_dir: str) -> None:
     setup = module_setups[module_dir]
     package_name = package_name_of(module_dir)
     os.chdir(fixture_simple_a / module_dir)
@@ -117,14 +117,14 @@ def validate_package_metadata(setup: TestSetup, content: list[str]) -> None:
 
     # named dependency should be inserted if enabled
     for dep in setup.deps or []:
-        fixed_str = f"Requires-Dist: {dep.full_name} {dep.version_range()}"
+        fixed_str = dep.metadata_line()
         if setup.enabled:
             assert fixed_str in content
         else:
             assert fixed_str not in content
     # transitive dependencies should not be added
     for dep in setup.transitive_deps or []:
-        fixed_str = f"Requires-Dist: {dep.full_name} {dep.version_range()}"
+        fixed_str = dep.metadata_line()
         assert fixed_str not in content
 
 

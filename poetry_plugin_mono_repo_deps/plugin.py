@@ -221,7 +221,7 @@ def create_named_dependency(constraint: str, dep: Dependency, package: Package) 
     name = package.name
     version = package.version
     dep_str = constraint + version.text
-    return Dependency(
+    new_dep = Dependency(
         name,
         dep_str,
         optional=dep.is_optional(),
@@ -229,6 +229,9 @@ def create_named_dependency(constraint: str, dep: Dependency, package: Package) 
         allows_prereleases=dep.allows_prereleases(),
         extras=dep.extras,
     )
+    new_dep._in_extras = dep.in_extras
+    new_dep._python_versions = dep.python_versions
+    return new_dep
 
 
 def modify_locked_package_to_named(

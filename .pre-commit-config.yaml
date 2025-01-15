@@ -89,6 +89,10 @@ repos:
         files: ^tests/fixtures/simple_a/lib-enabled-no-commands/pyproject.toml
         args: ["--no-update", "-C", "tests/fixtures/simple_a/lib-enabled-no-commands"]
       - id: poetry-lock
+        name: poetry-lock(lib-enabled-optional)
+        files: ^tests/fixtures/simple_a/lib-enabled-optional/pyproject.toml
+        args: ["--no-update", "-C", "tests/fixtures/simple_a/lib-enabled-optional"]
+      - id: poetry-lock
         name: poetry-lock(lib-independent)
         files: ^tests/fixtures/simple_a/lib-independent/pyproject.toml
         args: ["--no-update", "-C", "tests/fixtures/simple_a/lib-independent"]

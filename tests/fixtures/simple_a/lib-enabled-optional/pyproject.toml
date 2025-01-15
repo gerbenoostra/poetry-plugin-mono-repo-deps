@@ -1,0 +1,22 @@
+[build-system]
+build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core"]
+
+[tool.poetry]
+authors = ["John Doe <john@example.com>"]
+description = "Has a path dependency that is included through extras"
+name = "lib-enabled-optional"
+version = "0.0.1"
+
+[tool.poetry.dependencies]
+lib-a = {path = "../lib-a", develop = true, optional = true}
+python = "^3.8"
+
+[tool.poetry.extras]
+asset-utils = ["lib-a"]
+utils = ["lib-a"]
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.2"
+
+[tool.poetry-monorepo.deps]
