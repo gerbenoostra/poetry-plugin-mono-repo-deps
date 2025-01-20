@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 import zipfile
 from pathlib import Path
 from tarfile import TarFile
@@ -163,4 +164,14 @@ def test_outside_project_search(tmp_path: Path) -> None:
     args = ["poetry", "search", "requests"]
     _out_value, err_value = run_test_app(args)
     _logger.info(_out_value)
-    assert err_value == ""
+    if POETRY_VERSION >= 2:
+        # since poetry 2.0.1 running poetry search outside project always prints error
+        # we assume we didn't cause a different error if we get that error
+        has_runtime_error = (
+            re.search(r"RuntimeError\s+Poetry could not find a pyproject.toml file in .* or its parents", err_value)
+            is not None
+        )
+        assert err_value == "" or has_runtime_error
+
+    else:
+        assert err_value == ""
