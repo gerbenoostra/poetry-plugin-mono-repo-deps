@@ -5,7 +5,8 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, TypeVar, cast
 
 from cleo.events.console_event import ConsoleEvent
-from cleo.events.console_events import COMMAND
+from cleo.events.console_events import COMMAND, TERMINATE
+from cleo.events.console_terminate_event import ConsoleTerminateEvent
 from cleo.events.event import Event
 from cleo.events.event_dispatcher import EventDispatcher
 from cleo.io.io import IO
@@ -16,6 +17,7 @@ from poetry.plugins.application_plugin import ApplicationPlugin
 from poetry.poetry import Poetry
 from poetry.repositories.lockfile_repository import LockfileRepository
 from poetry.utils.helpers import merge_dicts
+from tomlkit import TOMLDocument
 
 T = TypeVar("T")
 
@@ -83,12 +85,14 @@ def load_config(poetry: Poetry) -> Config | None:
 class MonoRepoDepsPlugin(ApplicationPlugin):
     def __init__(self) -> None:
         super().__init__()
+        self._original_toml_data: TOMLDocument | None = None
 
     def activate(self, application: Application) -> None:
         self._application = application
         dispatcher = application.event_dispatcher
         if dispatcher is not None:
             dispatcher.add_listener(COMMAND, self.handle_command)
+            dispatcher.add_listener(TERMINATE, self.handle_terminate)
         else:  # pragma: no cover
             pass
 
@@ -128,6 +132,8 @@ class MonoRepoDepsPlugin(ApplicationPlugin):
 
         # for build
         self.update_locked_repository(io, config)
+        if command.name != "export":
+            self.update_pyproject_toml(config)
         # for export
         self.update_lock_data(config)
         return None
@@ -160,9 +166,66 @@ class MonoRepoDepsPlugin(ApplicationPlugin):
         """Updates the lockers internal lock data, necessary for commands like `export`"""
         poetry = self._application.poetry
         locked_packages = cast(List[Dict[str, Any]], poetry._locker.lock_data["package"])
+
         for info in locked_packages:
             if is_to_be_replaced_package_lock(config, info):
                 modify_locked_package_to_named(config, info, locked_packages)
+
+    def update_pyproject_toml(self, config: Config) -> None:
+        """Updates the pyproject.toml file, necessary for commands like `build`"""
+        poetry = self._application.poetry
+        pyproject = poetry.pyproject
+
+        toml_data: TOMLDocument = pyproject.data
+        self._original_toml_data = deepcopy(toml_data)
+        poetry_config = pyproject.poetry_config
+        # used to retrieve the current version of the package
+        locked_packages = cast(List[Dict[str, Any]], poetry._locker.lock_data["package"])
+        # update all possible dependency sections in the pyproject.toml
+        update_locked_dependencies(config, poetry_config.get("dependencies", {}), locked_packages)
+        update_locked_dependencies(config, poetry_config.get("dev-dependencies", {}), locked_packages)
+        if "group" in poetry_config:
+            for group_config in poetry_config["group"].values():
+                update_locked_dependencies(config, group_config.get("dependencies", {}), locked_packages)
+        # don't need to assign it back to pyproject.data, as we've modified the data structure in place
+        # writes the modified pyproject to disk, will be restored after the command by `restore_pyproject_toml`
+        pyproject.save()
+
+    def restore_pyproject_toml(self) -> None:
+        """Restores the pyproject.toml file, necessary for commands like `build`"""
+        toml_data = self._original_toml_data
+        if toml_data is None:
+            # we apparently didn't save it
+            return
+        pyproject = self._application.poetry.pyproject
+        pyproject._toml_document = toml_data
+        pyproject.save()
+        self._original_toml_data = None
+
+    def handle_terminate(self, event: Event, _event_name: str, _dispatcher: EventDispatcher) -> None:
+        try:
+            poetry = self._application.poetry
+        except RuntimeError:
+            # should only happen if poetry runs outside poetry folder structure
+            # as we modify poetry lock files, the plugin can only work in poetry folders
+            # and is only relevant for commands that work in poetry folders
+            # thus, either the command is not relevant
+            # or, the command would fail itself
+            return
+
+        config = load_config(poetry)
+        if config is None:  # pragma: no cover
+            return
+
+        event = cast(ConsoleTerminateEvent, event)  # because we listen to TERMINATEs
+        command = event.command
+        if command.name not in config.commands:
+            # Skipped for export, but that's handled by restoration
+            # which only restores if we modified the pyproject.toml file
+            return
+        # for build
+        self.restore_pyproject_toml()
+        return None
 
 
 def is_to_be_replaced_package_lock(config: Config, locked_package_data: dict[str, Any]) -> bool:
@@ -240,10 +303,16 @@ def modify_locked_package_to_named(
     if is_to_be_replaced_package_lock(config, info):
         _modify_locked_package_to_named(info)
         # remove path and develop from dependencies of dependencies
-        for dep_name, dep in info.get("dependencies", {}).items():
-            if is_to_be_replaced_dependency_lock(config, dep):
-                dep_version = get_current_locked_version(all_locked_packages, dep_name, "*")
-                _modify_locked_dependency_to_named(dep, dep_version)
+        update_locked_dependencies(config, info.get("dependencies", {}), all_locked_packages)
+
+
+def update_locked_dependencies(
+    config: Config, dependencies: dict[str, Any], all_locked_packages: list[dict[str, Any]]
+) -> None:
+    for dep_name, dep in dependencies.items():
+        if is_to_be_replaced_dependency_lock(config, dep):
+            dep_version = get_current_locked_version(all_locked_packages, dep_name, "*")
+            _modify_locked_dependency_to_named(dep, dep_version)
 
 
 def get_current_locked_version(locked_packaged: list[dict[str, Any]], name: str, default: str) -> str:

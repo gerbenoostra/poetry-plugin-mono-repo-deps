@@ -103,6 +103,37 @@ def test_build_artifact(fixture_simple_a: Path, module_dir: str) -> None:
             pkg_info_content = list(b.decode("utf-8").strip(os.linesep) for b in pkg_info_bytes)
             validate_package_metadata(setup, pkg_info_content)
 
+        pyproject_stream = tar.extractfile(f"{package_name}-0.0.1/pyproject.toml")
+        assert pyproject_stream is not None
+        with pyproject_stream:
+            pyproject_bytes = pyproject_stream.readlines()
+            pyproject_content = list(b.decode("utf-8").strip(os.linesep) for b in pyproject_bytes)
+            validate_pyproject_content(setup, pyproject_content)
+
+    # verifying that we didn't modify the original pyproject.toml
+    with open("pyproject.toml") as f:
+        original_content = f.readlines()
+        setup_disabled = TestSetup(enabled=False, deps=setup.deps, transitive_deps=setup.transitive_deps)
+        validate_pyproject_content(setup_disabled, original_content)
+
+
+def validate_pyproject_content(setup: TestSetup, content: list[str]) -> None:
+    _logger.info("Validating pyproject content:")
+    _logger.info("\n".join(content))
+    # path dependency should be replaced by named dependency
+    for dep in setup.deps or []:
+        dep_line_candidates = [line for line in content if line.strip().startswith(f"{dep.name} = ")]
+        # we expect only one in our test setups
+        # (could fail if we would reuse the lib name, for example as extras identifier)
+        # (therefore we've constructed the pyproject.toml's to not reuse the same name)
+        assert len(dep_line_candidates) == 1
+        dep_line = dep_line_candidates[0]
+        if setup.enabled:
+            assert dep.version in dep_line
+            dep.export_line
+        else:
+            assert dep.version not in dep_line
+
 
 def validate_package_metadata(setup: TestSetup, content: list[str]) -> None:
     _logger.info("Validating package metadata:")
