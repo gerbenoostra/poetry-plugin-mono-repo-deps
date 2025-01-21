@@ -1,3 +1,9 @@
+## v0.3.2 (2025-01-21)
+
+### Fix
+
+- **build**: update the pyproject.toml in the tar.gz (#24)
+
 ## v0.3.1 (2025-01-21)
 
 ### Fix
