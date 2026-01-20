@@ -99,6 +99,18 @@ jobs:
         run: |
           python -m pip install --upgrade pip
 
+      - name: Specify python version (poetry>=2.0) (non-macOS)
+        # As poetry>=2.0 is incompatible with python==3.8 (which we want to allow to allow poetry<2.0), we also pin the python version
+        if: (startsWith(matrix.poetry-version, '==2') || matrix.poetry-version == '') && runner.os != 'macOS'
+        run: |
+          sed -i "s/^python = \".*\"/python = \"~${{ matrix.python-version }}.0\"/" pyproject.toml
+
+      - name: Specify python version (poetry>=2.0) (macOs)
+        # need different sed command because it is zsh
+        if: (startsWith(matrix.poetry-version, '==2') || matrix.poetry-version == '') && runner.os == 'macOS'
+        run: |
+          sed -i '' "s/^python = \".*\"/python = \"~${{ matrix.python-version }}.0\"/" pyproject.toml
+
       - name: Specify poetry version (windows)
         # Pinning to a specific poetry version, such that we can verify test suite with that specific version
         # because $(which python) returns / paths, while poetry wants \ paths
