@@ -78,7 +78,10 @@ repository = "https://github.com/gerbenoostra/poetry-plugin-mono-repo-deps"
 version = "0.3.2"
 
 [tool.poetry.dependencies]
-cffi = {version = ">=1.17.0", markers = "python_version >= \"3.13\""}
+cffi = [
+  {version = ">=1.17.0", markers = "python_version >= \"3.13\""},
+  {version = ">=1.12,<2.0.0", markers = "python_version < \"3.9\""}
+]
 poetry = ">=1.7.0"
 poetry-core = ">=1.7.0"
 python = "^3.8"
