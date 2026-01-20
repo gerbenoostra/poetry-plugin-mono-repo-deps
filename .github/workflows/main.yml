@@ -73,6 +73,8 @@ jobs:
       - name: Install poetry
         shell: bash
         run: |
+          echo "Python version = $(python --version)"
+          echo "Python path = $(which python)"
           pipx install --python $(which python) poetry${{ matrix.poetry-version }}
           pipx ensurepath
 
