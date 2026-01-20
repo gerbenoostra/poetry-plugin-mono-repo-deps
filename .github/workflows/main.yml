@@ -75,8 +75,12 @@ jobs:
         run: |
           echo "Python version = $(python --version)"
           echo "Python path = $(which python)"
-          pipx install --python $(which python) poetry${{ matrix.poetry-version }}
-          pipx ensurepath
+          # Strip == prefix from poetry version for the installer
+          POETRY_VERSION="${{ matrix.poetry-version }}"
+          POETRY_VERSION="${POETRY_VERSION#==}"
+          export POETRY_VERSION
+          curl -sSL https://install.python-poetry.org | python -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       # as the poetry version specification will modify the lock, need to calculate the hash once, to be able to correctly cache the result
       - name: Get repo lock hash
