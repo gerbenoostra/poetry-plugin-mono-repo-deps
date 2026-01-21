@@ -239,10 +239,12 @@ def run_test_app(args: list[str]) -> tuple[str, str]:
     err_value = err.getvalue()
     _logger.info("Poetry run error output:")
     _logger.info(err_value)
-    # clear python detect warning
-    err_value = re.sub(
-        "Trying to detect current active python executable as specified in the config.\nFound: .*\n", "", err_value
-    )
+    # clear allowed warnings
+    for expected_output in [
+        "Trying to detect current active python executable as specified in the config.\nFound: .*\n",
+        "Using virtualenv: .*\n",
+    ]:
+        err_value = re.sub(expected_output, "", err_value)
     err_value = err_value.replace(export_warning, "")
     err_value = os.linesep.join(
         [line for line in err_value.splitlines() if not line.startswith("Creating virtualenv ")]
