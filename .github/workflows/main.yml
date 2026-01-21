@@ -117,11 +117,10 @@ jobs:
 
       - name: Specify poetry version (windows)
         # Pinning to a specific poetry version, such that we can verify test suite with that specific version
-        # because $(which python) returns / paths, while poetry wants \ paths
         if: runner.os == 'Windows'
         run: |
           poetry config virtualenvs.prefer-active-python true || echo "probably on Poetry>=2.0.0"
-          poetry env use $(which python)
+          poetry env use python
           echo "Python version = $(python --version)"
           echo "Poetry's Python version = $(poetry run python --version)"
           echo "Poetry version = $(poetry --version)"
