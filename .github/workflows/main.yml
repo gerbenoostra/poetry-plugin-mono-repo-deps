@@ -96,7 +96,11 @@ jobs:
           POETRY_VERSION="${POETRY_VERSION#==}"
           export POETRY_VERSION
           curl -sSL https://install.python-poetry.org | python -
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            echo "$APPDATA/Python/Scripts" >> $GITHUB_PATH
+          else
+            echo "$HOME/.local/bin" >> $GITHUB_PATH
+          fi
 
       # as the poetry version specification will modify the lock, need to calculate the hash once, to be able to correctly cache the result
       - name: Get repo lock hash
