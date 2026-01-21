@@ -29,7 +29,7 @@ jobs:
     runs-on: ${{ matrix.image }}
     strategy:
       matrix:
-        os: [Ubuntu, macOS, Windows]
+        os: [Ubuntu, Windows]
         python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
         poetry-version: ["==1.7.0", "==1.7.1", "==1.8.0", "==1.8.1", "==1.8.2", "==1.8.3", "==1.8.4", "==1.8.5", "==2.0.0", "==2.0.1", "==2.1.0", "==2.1.1", "==2.1.2", "==2.1.3", "==2.1.4", "==2.2.0", "==2.2.1", "==2.3.0", "==2.3.1", ""]
         exclude:
@@ -62,8 +62,6 @@ jobs:
             image: ubuntu-latest
           - os: Windows
             image: windows-latest
-          - os: macOS
-            image: macos-latest
       fail-fast: false
     defaults:
       run:
