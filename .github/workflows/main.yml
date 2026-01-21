@@ -65,7 +65,9 @@ jobs:
             poetry-version: "==2.3.1"
           - python-version: "3.9"
             poetry-version: ""
-
+          # poetry 2.1.0 has issues on Windows
+          - os: Windows
+            poetry-version: "==2.1.0"
         include:
           - os: Ubuntu
             image: ubuntu-latest
