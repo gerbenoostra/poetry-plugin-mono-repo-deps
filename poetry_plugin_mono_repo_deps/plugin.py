@@ -45,7 +45,7 @@ class Config:
 
     default_config = {
         "enabled": True,
-        "commands": ["build", "export"],
+        "commands": ["build", "export", "publish"],
         "constraint": "~=",
         "source_types": ["file", "directory"],
         "only_develop": False,
