@@ -1,3 +1,9 @@
+## v0.3.3 (2026-01-22)
+
+### Fix
+
+- remove upper bound on cffi version (#30)
+
 ## v0.3.2 (2025-01-21)
 
 ### Fix
