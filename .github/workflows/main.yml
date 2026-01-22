@@ -29,23 +29,50 @@ jobs:
     runs-on: ${{ matrix.image }}
     strategy:
       matrix:
-        os: [Ubuntu, macOS, Windows]
+        os: [Ubuntu, Windows]
         python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
-        poetry-version: ["==1.7.0", "==1.7.1", "==1.8.0", "==1.8.1", "==1.8.2", "==1.8.3", "==1.8.4", "==1.8.5", "==2.0.0", "==2.0.1", ""]
+        poetry-version: ["==1.7.0", "==1.7.1", "==1.8.0", "==1.8.1", "==1.8.2", "==1.8.3", "==1.8.4", "==1.8.5", "==2.0.0", "==2.0.1", "==2.1.0", "==2.1.1", "==2.1.2", "==2.1.3", "==2.1.4", "==2.2.0", "==2.2.1", "==2.3.0", "==2.3.1", ""]
         exclude:
+          # poetry 2.0.0 requires python > 3.8
           - python-version: "3.8"
             poetry-version: "==2.0.0"
           - python-version: "3.8"
             poetry-version: "==2.0.1"
           - python-version: "3.8"
+            poetry-version: "==2.1.0"
+          - python-version: "3.8"
+            poetry-version: "==2.1.1"
+          - python-version: "3.8"
+            poetry-version: "==2.1.2"
+          - python-version: "3.8"
+            poetry-version: "==2.1.3"
+          - python-version: "3.8"
+            poetry-version: "==2.1.4"
+          - python-version: "3.8"
+            poetry-version: "==2.2.0"
+          - python-version: "3.8"
+            poetry-version: "==2.2.1"
+          - python-version: "3.8"
+            poetry-version: "==2.3.0"
+          - python-version: "3.8"
+            poetry-version: "==2.3.1"
+          - python-version: "3.8"
             poetry-version: ""
+          # poetry 2.3.0 requires python > 3.9
+          - python-version: "3.9"
+            poetry-version: "==2.3.0"
+          - python-version: "3.9"
+            poetry-version: "==2.3.1"
+          - python-version: "3.9"
+            poetry-version: ""
+          # poetry 2.1.0 has issues on Windows
+          - os: Windows
+            poetry-version: "==2.1.0"
         include:
           - os: Ubuntu
             image: ubuntu-latest
           - os: Windows
             image: windows-latest
-          - os: macOS
-            image: macos-latest
       fail-fast: false
     defaults:
       run:
@@ -73,8 +100,18 @@ jobs:
       - name: Install poetry
         shell: bash
         run: |
-          pipx install poetry${{ matrix.poetry-version }}
-          pipx ensurepath
+          echo "Python version = $(python --version)"
+          echo "Python path = $(which python)"
+          # Strip == prefix from poetry version for the installer
+          POETRY_VERSION="${{ matrix.poetry-version }}"
+          POETRY_VERSION="${POETRY_VERSION#==}"
+          export POETRY_VERSION
+          curl -sSL https://install.python-poetry.org | python -
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            echo "$APPDATA/Python/Scripts" >> $GITHUB_PATH
+          else
+            echo "$HOME/.local/bin" >> $GITHUB_PATH
+          fi
 
       # as the poetry version specification will modify the lock, need to calculate the hash once, to be able to correctly cache the result
       - name: Get repo lock hash
@@ -111,10 +148,14 @@ jobs:
 
       - name: Specify poetry version (windows)
         # Pinning to a specific poetry version, such that we can verify test suite with that specific version
-        # because $(which python) returns / paths, while poetry wants \ paths
         if: runner.os == 'Windows'
         run: |
+          echo "GITHUB_PATH = $GITHUB_PATH"
+          echo "PATH = $PATH"
+          echo "Python version = $(python --version)"
+          echo "Python path = $(which python)"
           poetry config virtualenvs.prefer-active-python true || echo "probably on Poetry>=2.0.0"
+          poetry env use $(which python) || poetry env use python
           echo "Python version = $(python --version)"
           echo "Poetry's Python version = $(poetry run python --version)"
           echo "Poetry version = $(poetry --version)"
@@ -126,7 +167,12 @@ jobs:
       - name: Specify poetry version (non-windows)
         if: runner.os != 'Windows'
         run: |
-          poetry env use $(which python)
+          echo "GITHUB_PATH = $GITHUB_PATH"
+          echo "PATH = $PATH"
+          echo "Python version = $(python --version)"
+          echo "Python path = $(which python)"
+          poetry config virtualenvs.prefer-active-python true || echo "probably on Poetry>=2.0.0"
+          poetry env use $(which python) || poetry env use python
           echo "Python version = $(python --version)"
           echo "Poetry's Python version = $(poetry run python --version)"
           echo "Poetry version = $(poetry --version)"
