@@ -202,7 +202,7 @@ jobs:
         with:
           env_vars: OS,PYTHON
           token: ${{ secrets.CODECOV_TOKEN }}
-          fail_ci_if_error: true
+          fail_ci_if_error: false
           flags: unittests
           files: ./coverage/coverage.xml
           slug: gerbenoostra/poetry-plugin-mono-repo-deps
