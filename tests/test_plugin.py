@@ -18,7 +18,7 @@ from tests.helpers import POETRY_VERSION, lock_packages, prepare_test_poetry
 def test_config_empty() -> None:
     assert Config.from_dict({}) == Config(
         enabled=True,
-        commands=["build", "export"],
+        commands=["build", "export", "publish"],
         constraint="~=",
         source_types=["file", "directory"],
         only_develop=False,

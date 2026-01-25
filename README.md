@@ -12,7 +12,7 @@ However, when the packages are published to a PyPi repo, these dependencies shou
 By publishing the packages with named dependencies, one can easily install the packages and their dependencies.
 
 This plugin will replace path dependencies (`name @ path`) with named dependency specifications (`name ~= version`).
-By default, this is done when building artifacts ([`poetry build`](https://python-poetry.org/docs/main/cli/#build)) and exporting the locked dependency list ([`poetry export`](https://github.com/python-poetry/poetry-plugin-export)).
+By default, this is done when building artifacts ([`poetry build`](https://python-poetry.org/docs/main/cli/#build)), exporting the locked dependency list ([`poetry export`](https://github.com/python-poetry/poetry-plugin-export)) and publishing the package ([`poetry publish`](https://python-poetry.org/docs/main/cli/#publish)).
 The plugin can however be configured to modify any other command registered by Poetry or other plugins.
 
 ## An example using build and export
@@ -109,7 +109,7 @@ This is equivalent to adding the following default settings:
 ```toml
 [tool.poetry-monorepo.deps]
 enabled = true
-commands = ["build", "export"]
+commands = ["build", "export", "publish"]
 constraint = "~="
 source_types = ["file", "directory"]
 only_develop = false
@@ -133,7 +133,7 @@ Whether the plugin should be activated for commands on this project.
 
 **Type**: `List[string]`
 
-**Default**: `["build", "export"]`
+**Default**: `["build", "export", "publish"]`
 
 **Allowed values**: Any CLI command registered with Poetry (could also be provided by other plugins).
 
@@ -176,7 +176,7 @@ If you configure `source_types` to be any Path dependency (ie. `file` or `direct
 
 ## Caveats
 
-Currently, the plugin has only been verified to work with the `poetry build` and `poetry export` commands.
+Currently, the plugin has only been verified to work with the `poetry build`, `poetry export` and `poetry publish` commands.
 Though theoretically it should work with any other (plugin's) command, your mileage may vary.
 
 ## How it works

@@ -79,6 +79,30 @@ url = "../{dep.name}"
 
 
 @pytest.mark.parametrize("module_dir", module_setups.keys())
+def test_publish_command_activation(fixture_simple_a: Path, module_dir: str) -> None:
+    """Verifies that the plugin activates for the publish command."""
+    setup = module_setups[module_dir]
+    os.chdir(fixture_simple_a / module_dir)
+
+    # Run publish with --dry-run to avoid actually publishing
+    args = ["poetry", "publish", "--dry-run", "-vvv"]
+    out, err = run_test_app(args)
+    _logger.info("Publish command output:")
+    _logger.info(out)
+    _logger.info("Publish command error:")
+    _logger.info(err)
+
+    # Check that the plugin activated if enabled
+    if setup.enabled:
+        # The plugin should have logged that it's replacing path dependencies
+        assert "Replacing path dependencies with named dependencies" in out or "Replacing path dependency" in out
+    else:
+        assert (
+            "Replacing path dependencies with named dependencies" not in out and "Replacing path dependency" not in out
+        )
+
+
+@pytest.mark.parametrize("module_dir", module_setups.keys())
 def test_build_artifact(fixture_simple_a: Path, module_dir: str) -> None:
     setup = module_setups[module_dir]
     package_name = package_name_of(module_dir)
